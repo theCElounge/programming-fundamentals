@@ -93,7 +93,7 @@ import math
 import time
 from bmi270 import BMI270
 
-i2c = machine.I2C(1)
+i2c = machine.I2C(1, scl=machine.Pin(15), sda=machine.Pin(14))
 imu = BMI270(i2c)
 
 while True:
@@ -176,7 +176,7 @@ import math
 import time
 from bmi270 import BMI270
 
-i2c = machine.I2C(1)
+i2c = machine.I2C(1, scl=machine.Pin(15), sda=machine.Pin(14))
 imu = BMI270(i2c)
 
 STEP_THRESHOLD = 1.25   # g — tune this for your walking style
