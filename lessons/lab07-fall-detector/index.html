@@ -110,7 +110,7 @@ import math
 import time
 from bmi270 import BMI270
 
-i2c = machine.I2C(1)
+i2c = machine.I2C(1, scl=machine.Pin(15), sda=machine.Pin(14))
 imu = BMI270(i2c)
 
 FREEFALL_THRESHOLD = 0.4   # g — below this, we may be falling
@@ -189,9 +189,11 @@ import math
 import time
 from bmi270 import BMI270
 
-i2c = machine.I2C(1)
+i2c = machine.I2C(1, scl=machine.Pin(15), sda=machine.Pin(14))
 imu = BMI270(i2c)
-red_led = machine.PWM(machine.Pin(10))
+# Red LED = nRF52840 pin P0.24 (see Lab 2)
+red_led = machine.PWM(machine.Pin(24), freq=1000)
+red_led.duty_u16(65535)   # start OFF (Active-Low)
 
 def alert_flash():
     # Active-Low: 0 = on. Flash red 5 times.
