@@ -84,7 +84,7 @@
 
                 <figure class="lab-figure" role="group" aria-labelledby="lps22hb-sensor-location-jpg-caption">
                     <img src="" data-suggested-filename="assets/images/lps22hb-sensor-location.jpg"
-                         alt="Top-down photograph of the Arduino NANO BLE Sense Rev2 with an arrow pointing to the LPS22HB barometric sensor package."
+                         alt="Top-down photograph of the Arduino Nano 33 BLE Sense Rev2 with an arrow pointing to the LPS22HB barometric sensor package."
                          width="700" height="420"
                          loading="lazy">
                     <figcaption id="lps22hb-sensor-location-jpg-caption">Figure 1: The onboard LPS22HB barometric pressure sensor.</figcaption>
@@ -99,7 +99,7 @@
                     <pre><code>import machine
 from lps22hb import LPS22HB
 
-i2c = machine.I2C(1)
+i2c = machine.I2C(1, scl=machine.Pin(15), sda=machine.Pin(14))
 barometer = LPS22HB(i2c)
 
 pressure_hpa = barometer.read_pressure_hpa()
@@ -138,7 +138,7 @@ print("Temperature (C):", temperature_c)</code></pre>
 import time
 from lps22hb import LPS22HB
 
-i2c = machine.I2C(1)
+i2c = machine.I2C(1, scl=machine.Pin(15), sda=machine.Pin(14))
 barometer = LPS22HB(i2c)
 
 readings = []
@@ -175,6 +175,10 @@ print("Maximum:", max(readings))</code></pre>
 dict_keys(['pressure_hpa', 'temperature_c', 'sample'])</code></pre>
                 </div>
 
+                <div class="instructions" role="note" aria-label="Key order note">
+                    <strong>💡 Note:</strong> Unlike desktop Python (which keeps keys in the order you added them), MicroPython does not guarantee any particular key order — <code>reading.keys()</code> may list the keys in a different order on your board. Always look values up by key, never by position.
+                </div>
+
                 <p>Now let's combine lists and dictionaries: a <strong>list of dictionaries</strong>, where each dictionary is one labeled reading.</p>
 
                 <div class="code-block">
@@ -183,7 +187,7 @@ dict_keys(['pressure_hpa', 'temperature_c', 'sample'])</code></pre>
 import time
 from lps22hb import LPS22HB
 
-i2c = machine.I2C(1)
+i2c = machine.I2C(1, scl=machine.Pin(15), sda=machine.Pin(14))
 barometer = LPS22HB(i2c)
 
 log = []
@@ -221,7 +225,7 @@ print("Sample 3 pressure:", log[2]["pressure_hpa"])</code></pre>
 import time
 from lps22hb import LPS22HB
 
-i2c = machine.I2C(1)
+i2c = machine.I2C(1, scl=machine.Pin(15), sda=machine.Pin(14))
 barometer = LPS22HB(i2c)
 
 # "w" = write mode (creates the file, or erases it if it already exists)
@@ -262,7 +266,7 @@ print("Done. Saved to pressure_log.csv")</code></pre>
 print(contents)</code></pre>
                 </div>
 
-                <p>In Thonny, you can also open <span class="ui-path">View &gt; Files</span>, find <code>pressure_log.csv</code> under the MicroPython device, and double-click it to view or download the file directly.</p>
+                <p>In Thonny, you can also open <span class="ui-path">View &gt; Files</span>, find <code>pressure_log.csv</code> under the MicroPython device, and double-click it to open it. To copy it to your computer, right-click the file and choose <strong>Download</strong>.</p>
 
                 <figure class="lab-figure" role="group" aria-labelledby="thonny-files-view-png-caption">
                     <img src="" data-suggested-filename="assets/images/thonny-files-view.png"
@@ -280,7 +284,7 @@ print(contents)</code></pre>
                     <table class="tt-table" summary="Methods available on the LPS22HB driver object">
                         <thead><tr><th scope="col">Method</th><th scope="col">Returns</th></tr></thead>
                         <tbody>
-                            <tr><td><code>LPS22HB(i2c)</code></td><td>Creates a sensor object on the given I2C bus.</td></tr>
+                            <tr><td><code>LPS22HB(i2c)</code></td><td>Creates a sensor object on the given I2C bus. Use <code>machine.I2C(1, scl=machine.Pin(15), sda=machine.Pin(14))</code> for the internal bus.</td></tr>
                             <tr><td><code>barometer.read_pressure_hpa()</code></td><td>Float — pressure in hectopascals.</td></tr>
                             <tr><td><code>barometer.read_temperature_c()</code></td><td>Float — internal die temperature in Celsius.</td></tr>
                         </tbody>
