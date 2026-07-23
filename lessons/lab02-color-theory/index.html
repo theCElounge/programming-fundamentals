@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lab 2: Color Theory · Programming Fundamentals</title>
-    <meta name="description" content="Learn RGB LED control, PWM brightness, and Active-Low logic using the Arduino NANO BLE Sense onboard RGB LED.">
+    <meta name="description" content="Learn RGB LED control, PWM brightness, and Active-Low logic using the Arduino Nano 33 BLE Sense onboard RGB LED.">
     <link rel="icon" type="image/png" href="../../assets/images/favicon-32.png" sizes="32x32">
     <link rel="icon" type="image/png" href="../../assets/images/favicon-16.png" sizes="16x16">
     <link rel="apple-touch-icon" href="../../assets/images/apple-touch-icon.png">
@@ -75,7 +75,7 @@
 
             <section id="active-low" class="section" aria-labelledby="active-low-heading">
                 <h2 id="active-low-heading">Part 1: Understanding Active-Low Logic</h2>
-                <p>On the Arduino NANO BLE Sense Rev 2, the onboard RGB LEDs use <strong>Active-Low logic</strong>. This means:</p>
+                <p>On the Arduino Nano 33 BLE Sense Rev2, the onboard RGB LEDs use <strong>Active-Low logic</strong>. This means:</p>
                 <ul>
                     <li><code>0</code> (LOW) turns the LED <strong>ON</strong></li>
                     <li><code>1</code> (HIGH) turns the LED <strong>OFF</strong></li>
@@ -85,7 +85,7 @@
                 <!-- IMAGE PROVISION: replace src="" with the real file once photographed -->
                 <figure class="lab-figure" role="group" aria-labelledby="rgb-led-caption">
                     <img src="" data-suggested-filename="assets/images/rgb-led-closeup.jpg"
-                         alt="Close-up photograph of the RGB LED on the Arduino NANO BLE Sense board showing the red, green, and blue LED elements."
+                         alt="Close-up photograph of the RGB LED on the Arduino Nano 33 BLE Sense board showing the red, green, and blue LED elements."
                          width="600" height="400"
                          loading="lazy">
                     <figcaption id="rgb-led-caption">Figure 1: The onboard RGB LED. Each color (red, green, blue) can be controlled independently.</figcaption>
@@ -100,10 +100,16 @@
                     <pre><code>import machine
 import time
 
-# Define RGB LED pins (check your board's pinout)
-red = machine.PWM(machine.Pin(10))
-green = machine.PWM(machine.Pin(11))
-blue = machine.PWM(machine.Pin(12))
+# RGB LED pins on the Nano 33 BLE Sense (nRF52840 pin numbers)
+# Red = P0.24, Green = P0.16, Blue = P0.06
+red = machine.PWM(machine.Pin(24), freq=1000)
+green = machine.PWM(machine.Pin(16), freq=1000)
+blue = machine.PWM(machine.Pin(6), freq=1000)
+
+# Start with all LEDs OFF (Active-Low: 65535 duty = off)
+red.duty_u16(65535)
+green.duty_u16(65535)
+blue.duty_u16(65535)
 
 print("Testing Active-Low logic...")
 
@@ -120,11 +126,13 @@ print("Red LED should have blinked!")</code></pre>
             <section id="pwm-brightness" class="section" aria-labelledby="pwm-heading">
                 <h2 id="pwm-heading">Part 2: PWM and Brightness Control</h2>
                 <p><strong>PWM (Pulse Width Modulation)</strong> lets us control LED brightness by rapidly turning the LED on and off. The <strong>duty cycle</strong> determines how much time the LED is ON versus OFF:</p>
+                <p>Because the RGB LED on this board is <strong>Active-Low</strong>, the relationship is inverted compared to a "normal" (Active-High) LED:</p>
                 <ul>
-                    <li><strong>0 duty</strong> = LED always ON (full brightness)</li>
-                    <li><strong>32767 duty</strong> = LED half ON, half OFF (50% brightness)</li>
-                    <li><strong>65535 duty</strong> = LED always OFF (off)</li>
+                    <li><strong>0 duty</strong> = pin always LOW = LED always ON (full brightness)</li>
+                    <li><strong>32767 duty</strong> = pin half HIGH, half LOW (50% brightness)</li>
+                    <li><strong>65535 duty</strong> = pin always HIGH = LED always OFF</li>
                 </ul>
+                <p>On an Active-High LED it would be the other way around: a <em>higher</em> duty cycle would mean a <em>brighter</em> LED.</p>
 
                 <!-- IMAGE PROVISION: replace src="" with the real file once created -->
                 <figure class="lab-figure" role="group" aria-labelledby="pwm-diagram-caption">
@@ -140,7 +148,8 @@ print("Red LED should have blinked!")</code></pre>
                     <pre><code>import machine
 import time
 
-red = machine.PWM(machine.Pin(10))
+# Red LED = nRF52840 pin P0.24
+red = machine.PWM(machine.Pin(24), freq=1000)
 
 print("PWM brightness test...")
 
@@ -150,6 +159,7 @@ for duty in range(0, 65536, 5000):
     print(f"Duty: {duty}")
     time.sleep(0.3)
 
+red.duty_u16(65535)   # Make sure the LED ends fully OFF
 print("Done!")</code></pre>
                 </div>
             </section>
@@ -163,10 +173,10 @@ print("Done!")</code></pre>
                     <pre><code>import machine
 import time
 
-# Setup PWM pins
-red = machine.PWM(machine.Pin(10))
-green = machine.PWM(machine.Pin(11))
-blue = machine.PWM(machine.Pin(12))
+# Setup PWM pins (RGB LED: Red = P0.24, Green = P0.16, Blue = P0.06)
+red = machine.PWM(machine.Pin(24), freq=1000)
+green = machine.PWM(machine.Pin(16), freq=1000)
+blue = machine.PWM(machine.Pin(6), freq=1000)
 
 def set_color(r, g, b):
     """Set RGB LED color. Values 0-100% (Active-Low inverted)."""
