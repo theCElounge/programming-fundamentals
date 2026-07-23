@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Lab 11: Night-Light · Programming Fundamentals</title>
+    <meta name="description" content="Combine APDS9960 light and proximity readings with logical operators and calibration to build an automatic night-light.">
+
+    <link rel="icon" type="image/png" href="../../assets/images/favicon-32.png" sizes="32x32">
+    <link rel="icon" type="image/png" href="../../assets/images/favicon-16.png" sizes="16x16">
+    <link rel="apple-touch-icon" href="../../assets/images/apple-touch-icon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="../../assets/css/site.css">
+    <link rel="stylesheet" href="../../assets/css/lab-common.css">
+    <link rel="stylesheet" href="lab-styles.css">
+
+    <script src="../../assets/js/site.js" defer></script>
+    <script src="../../assets/js/lab-common.js" defer></script>
+</head>
+<body>
+    <a class="skip-link" href="#main-content">Skip to main content</a>
+
+    <header class="site-header" role="banner">
+        <div class="header-inner">
+            <a class="brand" href="../../index.html" aria-label="Programming Fundamentals — Home">
+                <img class="brand-mark" src="../../assets/images/logo-mark-64.png" alt="" width="36" height="36">
+                <span>Programming Fundamentals<span class="brand-course">The CE Lounge · Lab Materials</span></span>
+            </a>
+            <nav class="site-nav" aria-label="Course">
+                <ul>
+                    <li><a href="../../index.html">All labs</a></li>
+                </ul>
+            </nav>
+            <button type="button" class="theme-toggle" aria-pressed="false" aria-label="Switch to dark theme">🌙<span class="theme-label">Dark</span></button>
+        </div>
+    </header>
+
+    <div class="hero">
+        <p class="eyebrow">
+            <span aria-hidden="true">Lab 011 / 014</span>
+            <span class="sr-only">Lab 11 of 14</span>
+        </p>
+        <h1>Lab <span class="accent">Night-Light</span></h1>
+        <hr class="trace-rule" aria-hidden="true">
+        <p class="lede">Combine the APDS9960's light and proximity readings with logical operators, and calibrate the darkness threshold for your own room.</p>
+    </div>
+
+    <div class="page-grid">
+        <main id="main-content" class="content">
+
+            <section id="objectives" class="section" aria-labelledby="objectives-heading">
+                <h2 id="objectives-heading">Learning Objectives</h2>
+                <p>By the end of this lab, you will be able to:</p>
+                <ol>
+                    <li>Read ambient light and proximity levels from the <strong>APDS9960</strong>.</li>
+                    <li>Combine two sensor conditions using <strong>logical operators</strong> (<code>and</code>, <code>or</code>, <code>not</code>).</li>
+                    <li>Perform a simple <strong>calibration</strong> routine for a room's baseline darkness.</li>
+                    <li>Build an automatic night-light that only turns on when it's dark <em>and</em> someone is near.</li>
+                </ol>
+
+                <div class="example-card" role="note" aria-label="Lab information">
+                    <h3 id="lab-meta-heading">Lab Information</h3>
+                    <dl class="lab-meta-list">
+                        <dt>Hardware</dt>
+                        <dd>APDS9960 Light + Proximity Sensor (onboard, I2C)</dd>
+                        <dt>Duration</dt>
+                        <dd>60–90 minutes</dd>
+                        <dt>Prerequisites</dt>
+                        <dd>Lab 10: Gesture Remote</dd>
+                        <dt>Key Concepts</dt>
+                        <dd>Logical operators, calibration</dd>
+                    </dl>
+                </div>
+            </section>
+
+            <section id="light-and-proximity" class="section" aria-labelledby="light-and-proximity-heading">
+                <h2 id="light-and-proximity-heading">Part 1: Reading Light and Proximity</h2>
+                <p>Beyond gestures, the APDS9960 reports <strong>ambient light</strong> (how bright the room is) and <strong>proximity</strong> (how close an object is, roughly 0–255, where higher means closer).</p>
+
+                <div class="code-block">
+                    <span class="code-caption">Python — light_proximity_test.py</span>
+                    <pre><code>import machine
+import time
+from apds9960 import APDS9960
+
+i2c = machine.I2C(1)
+sensor = APDS9960(i2c)
+
+while True:
+    clear, r, g, b = sensor.color()   # "clear" channel doubles as ambient light level
+    proximity = sensor.proximity()
+
+    print(f"Ambient light: {clear}   Proximity: {proximity}")
+    time.sleep(0.3)</code></pre>
+                </div>
+
+                <p>Cover the sensor with your hand: <code>proximity</code> should climb toward 255 while <code>clear</code> (light level) drops. Shine a phone flashlight on it: <code>clear</code> should spike.</p>
+
+                <figure class="lab-figure" role="group" aria-labelledby="apds9960-light-proximity-diagram-png-caption">
+                    <img src="" data-suggested-filename="assets/images/apds9960-light-proximity-diagram.png"
+                         alt="Diagram of the APDS9960 sensor window with two labeled arrows: one showing ambient light entering from above, another showing an infrared proximity beam reflecting off a nearby hand."
+                         width="700" height="420"
+                         loading="lazy">
+                    <figcaption id="apds9960-light-proximity-diagram-png-caption">Figure 1: The same sensor window senses both ambient light and reflected proximity.</figcaption>
+                </figure>
+            </section>
+
+            <section id="logical-operators" class="section" aria-labelledby="logical-operators-heading">
+                <h2 id="logical-operators-heading">Part 2: Combining Conditions with Logical Operators</h2>
+                <p>A good night-light needs <strong>both</strong> conditions to be true at once: it should be dark, <strong>and</strong> someone should be nearby. Checking only one condition gives the wrong behavior — a light-only check would turn the LED on all night even with nobody around; a proximity-only check would turn it on in broad daylight.</p>
+
+                <div class="code-block">
+                    <span class="code-caption">Python — Shell</span>
+                    <pre><code>>>> is_dark = True
+>>> is_near = False
+>>> is_dark and is_near
+False
+>>> is_dark or is_near
+True
+>>> not is_dark
+False</code></pre>
+                </div>
+
+                <div class="table-responsive" role="region" aria-label="Truth table for and/or">
+                    <table class="tt-table" summary="Truth table showing all combinations of is_dark and is_near with and, or results">
+                        <thead><tr><th scope="col">is_dark</th><th scope="col">is_near</th><th scope="col">is_dark <code>and</code> is_near</th><th scope="col">is_dark <code>or</code> is_near</th></tr></thead>
+                        <tbody>
+                            <tr><td>True</td><td>True</td><td>True</td><td>True</td></tr>
+                            <tr><td>True</td><td>False</td><td>False</td><td>True</td></tr>
+                            <tr><td>False</td><td>True</td><td>False</td><td>True</td></tr>
+                            <tr><td>False</td><td>False</td><td>False</td><td>False</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="calibration" class="section" aria-labelledby="calibration-heading">
+                <h2 id="calibration-heading">Part 3: Calibrating for Your Room</h2>
+                <p>"Dark" is relative — a light threshold that works in a windowless room will be wrong in a sunlit one. Instead of hard-coding a fixed number, we <strong>calibrate</strong> at startup by sampling the current light level and setting the threshold relative to it.</p>
+
+                <div class="code-block">
+                    <span class="code-caption">Python — calibrate_light.py</span>
+                    <pre><code>import machine
+import time
+from apds9960 import APDS9960
+
+i2c = machine.I2C(1)
+sensor = APDS9960(i2c)
+
+print("Calibrating... keep the room at its normal daytime brightness.")
+samples = []
+for _ in range(10):
+    clear, r, g, b = sensor.color()
+    samples.append(clear)
+    time.sleep(0.2)
+
+baseline_light = sum(samples) / len(samples)
+dark_threshold = baseline_light * 0.4   # "dark" = less than 40% of daytime brightness
+
+print(f"Baseline light: {baseline_light:.0f}")
+print(f"Dark threshold set to: {dark_threshold:.0f}")</code></pre>
+                </div>
+
+                <div class="instructions" role="note" aria-label="Calibration tip">
+                    <strong>💡 Tip:</strong> This same pattern — collect several samples, average them, use that average to set a threshold — is exactly what you did in Lab 9's spirit-level calibration. It's a technique worth recognizing wherever it appears.
+                </div>
+            </section>
+
+            <section id="night-light" class="section" aria-labelledby="night-light-heading">
+                <h2 id="night-light-heading">Part 4: Building the Night-Light</h2>
+                <div class="code-block">
+                    <span class="code-caption">Python — night_light.py</span>
+                    <pre><code>import machine
+import time
+from apds9960 import APDS9960
+
+i2c = machine.I2C(1)
+sensor = APDS9960(i2c)
+led = machine.PWM(machine.Pin(11))  # green channel of the onboard RGB LED
+
+PROXIMITY_THRESHOLD = 60
+
+print("Calibrating light baseline...")
+samples = [sensor.color()[0] for _ in range(10)]
+dark_threshold = (sum(samples) / len(samples)) * 0.4
+print(f"Dark threshold: {dark_threshold:.0f}")
+
+print("Night-light running. Ctrl+C to stop.")
+
+while True:
+    clear, r, g, b = sensor.color()
+    proximity = sensor.proximity()
+
+    is_dark = clear < dark_threshold
+    is_near = proximity > PROXIMITY_THRESHOLD
+
+    if is_dark and is_near:
+        led.duty_u16(0)       # Active-Low: on
+    else:
+        led.duty_u16(65535)   # off
+
+    time.sleep(0.2)</code></pre>
+                </div>
+
+                <figure class="lab-figure" role="group" aria-labelledby="night-light-decision-diagram-png-caption">
+                    <img src="" data-suggested-filename="assets/images/night-light-decision-diagram.png"
+                         alt="Simple flowchart with a diamond decision box asking is it dark and is someone near, with a yes arrow leading to LED on and a no arrow leading to LED off."
+                         width="700" height="420"
+                         loading="lazy">
+                    <figcaption id="night-light-decision-diagram-png-caption">Figure 2: The night-light's decision logic — both conditions must hold for the LED to turn on.</figcaption>
+                </figure>
+
+                <div class="callout-warning" role="alert" aria-label="Troubleshooting">
+                    <strong>🔧 Troubleshooting:</strong>
+                    <ul style="margin-top: 0.5rem; margin-bottom: 0;">
+                        <li><strong>LED never turns on?</strong> Lower <code>PROXIMITY_THRESHOLD</code>, or raise the <code>0.4</code> multiplier in the dark-threshold calculation.</li>
+                        <li><strong>LED stays on in daylight?</strong> Re-run calibration in the actual bright condition, and lower the multiplier (e.g. to <code>0.3</code>).</li>
+                    </ul>
+                </div>
+            </section>
+
+            <section id="appendix" class="section" aria-labelledby="appendix-heading">
+                <h2 id="appendix-heading">Appendix — Quick Reference</h2>
+                <h3 id="logical-ops-table">Logical Operators</h3>
+                <div class="table-responsive" role="region" aria-label="Logical operators reference">
+                    <table class="tt-table" summary="Python logical operators">
+                        <thead><tr><th scope="col">Operator</th><th scope="col">True when…</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>and</code></td><td>Both operands are <code>True</code></td></tr>
+                            <tr><td><code>or</code></td><td>At least one operand is <code>True</code></td></tr>
+                            <tr><td><code>not</code></td><td>Inverts a single boolean</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <nav class="pager" aria-label="Lab navigation">
+                <a class="pager-prev" href="../lab10-gesture-remote/index.html">
+                    <span class="pager-label">Previous lab</span>
+                    <span class="pager-title">Lab 10: Gesture Remote</span>
+                </a>
+                <a class="pager-next" href="../lab12-color-matcher/index.html">
+                    <span class="pager-label">Next lab</span>
+                    <span class="pager-title">Lab 12: Color Matcher →</span>
+                </a>
+            </nav>
+        </main>
+
+        <aside class="toc" data-toc aria-label="On this page">
+            <details open>
+                <summary>On this page</summary>
+                <nav aria-label="Table of contents">
+                    <ul>
+                        <li><a href="#objectives">Learning Objectives</a></li>
+                        <li><a href="#light-and-proximity">Part 1: Reading Light and Proximity</a></li>
+                        <li><a href="#logical-operators">Part 2: Combining Conditions with Logical Operators</a></li>
+                        <li><a href="#calibration">Part 3: Calibrating for Your Room</a></li>
+                        <li><a href="#night-light">Part 4: Building the Night-Light</a></li>
+                        <li><a href="#appendix">Appendix — Quick Reference</a></li>
+                    </ul>
+                </nav>
+            </details>
+        </aside>
+    </div>
+
+    <footer class="site-footer" role="contentinfo">
+        <div class="footer-inner">
+            <p>Programming Fundamentals · The CE Lounge · Spring 2026</p>
+            <p class="bits" aria-hidden="true">0 1 1 0 · 1 0 0 1</p>
+        </div>
+    </footer>
+</body>
+</html>

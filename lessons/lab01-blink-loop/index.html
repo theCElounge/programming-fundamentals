@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- PAGE METADATA — Edit these for each lab -->
+    <title>Lab 1: Blink & Loop · Programming Fundamentals</title>
+    <meta name="description" content="Learn to install Thonny IDE, connect the Arduino NANO BLE Sense, and write your first MicroPython program to blink an LED.">
+
+    <!-- FONTS — Same as course site -->
+    <link rel="icon" type="image/png" href="../../assets/images/favicon-32.png" sizes="32x32">
+    <link rel="icon" type="image/png" href="../../assets/images/favicon-16.png" sizes="16x16">
+    <link rel="apple-touch-icon" href="../../assets/images/apple-touch-icon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <!-- COURSE STYLESHEET — Two levels up from this file -->
+    <link rel="stylesheet" href="../../assets/css/site.css">
+
+    <!-- LAB-SPECIFIC STYLES — For images, videos, and lab-specific components -->
+    <link rel="stylesheet" href="../../assets/css/lab-common.css">
+    <link rel="stylesheet" href="lab-styles.css">
+
+    <!-- COURSE SCRIPTS — Dark mode, TOC, scroll spy -->
+    <script src="../../assets/js/site.js" defer></script>
+
+    <!-- LAB-SPECIFIC SCRIPT — For interactive exercises -->
+    <script src="../../assets/js/lab-common.js" defer></script>
+</head>
+<body>
+    <!-- SKIP LINK — First focusable element for keyboard/screenreader users -->
+    <a class="skip-link" href="#main-content">Skip to main content</a>
+
+    <!-- SITE HEADER — Course branding and navigation -->
+    <header class="site-header" role="banner">
+        <div class="header-inner">
+            <a class="brand" href="../../index.html" aria-label="Programming Fundamentals — Home">
+                <img class="brand-mark" src="../../assets/images/logo-mark-64.png" alt="" width="36" height="36">
+                <span>Programming Fundamentals<span class="brand-course">The CE Lounge · Lab Materials</span></span>
+            </a>
+            <nav class="site-nav" aria-label="Course">
+                <ul>
+                    <li><a href="../../index.html">All labs</a></li>
+                </ul>
+            </nav>
+            <button type="button" class="theme-toggle" aria-pressed="false" aria-label="Switch to dark theme">🌙<span class="theme-label">Dark</span></button>
+        </div>
+    </header>
+
+    <!-- HERO SECTION — Lesson title and introduction -->
+    <div class="hero">
+        <p class="eyebrow">
+            <span aria-hidden="true">Lab 001 / 014</span>
+            <span class="sr-only">Lab 1 of 14</span>
+        </p>
+        <h1>Lab <span class="accent">Blink &amp; Loop</span></h1>
+        <hr class="trace-rule" aria-hidden="true">
+        <p class="lede">Your first steps into embedded programming. Learn to install Thonny IDE, connect the Arduino NANO BLE Sense Rev 2, and write a MicroPython program that blinks an LED — the "Hello World" of hardware.</p>
+    </div>
+
+    <!-- MAIN PAGE GRID — Content + Table of Contents -->
+    <div class="page-grid">
+        <main id="main-content" class="content">
+
+            <!-- ============================================================ -->
+            <!-- SECTION 1: LEARNING OBJECTIVES                               -->
+            <!-- ============================================================ -->
+            <section id="objectives" class="section" aria-labelledby="objectives-heading">
+                <h2 id="objectives-heading">Learning Objectives</h2>
+                <p>By the end of this lab, you will be able to:</p>
+                <ol>
+                    <li>Install and configure <strong>Thonny IDE</strong> on your computer.</li>
+                    <li>Connect the <strong>Arduino NANO BLE Sense Rev 2</strong> to your computer.</li>
+                    <li>Write a <strong>MicroPython script</strong> that blinks an LED.</li>
+                    <li>Use <strong>variables</strong> to control program behavior.</li>
+                    <li>Understand the <code>while True</code> infinite loop — the backbone of embedded programs.</li>
+                </ol>
+
+                <!-- LAB META INFO CARD -->
+                <div class="example-card" role="note" aria-label="Lab information">
+                    <h3 id="lab-meta-heading">Lab Information</h3>
+                    <dl class="lab-meta-list">
+                        <dt>Hardware</dt>
+                        <dd>Arduino NANO BLE Sense Rev 2</dd>
+                        <dt>Duration</dt>
+                        <dd>60–90 minutes</dd>
+                        <dt>Prerequisites</dt>
+                        <dd>None — this is your first lab!</dd>
+                        <dt>IDE</dt>
+                        <dd>Thonny (recommended)</dd>
+                    </dl>
+                </div>
+            </section>
+
+            <!-- ============================================================ -->
+            <!-- SECTION 2: INSTALLING THONNY IDE                             -->
+            <!-- ============================================================ -->
+            <section id="install-thonny" class="section" aria-labelledby="install-heading">
+                <h2 id="install-heading">Part 1: Installing Thonny IDE</h2>
+                <p>Thonny is a beginner-friendly Python IDE designed for learning. It works great with MicroPython boards and requires no complex setup.</p>
+
+                <h3 id="download-thonny">Step 1: Download Thonny</h3>
+                <ol class="steps">
+                    <li>Open your web browser and go to <a href="https://thonny.org/" target="_blank" rel="noopener noreferrer">thonny.org<span class="sr-only"> (opens in a new window)</span></a>.</li>
+                    <li>Click the <strong>Download</strong> button.</li>
+                    <li>Select the version for your operating system:
+                        <ul>
+                            <li><strong>Windows:</strong> Download the <code>.exe</code> installer (e.g., <code>thonny-4.1.7.exe</code>).</li>
+                            <li><strong>macOS:</strong> Download the <code>.dmg</code> file.</li>
+                            <li><strong>Linux:</strong> Use your package manager or download the <code>.AppImage</code>.</li>
+                        </ul>
+                    </li>
+                </ol>
+
+                <h3 id="install-thonny-steps">Step 2: Install Thonny</h3>
+
+                <h4 id="install-windows">On Windows</h4>
+                <ol class="steps">
+                    <li>Double-click the downloaded <code>.exe</code> file.</li>
+                    <li>Click <strong>Yes</strong> if prompted by User Account Control.</li>
+                    <li>In the installation wizard, click <strong>Next</strong> through each screen.</li>
+                    <li>You can leave the default installation options as they are.</li>
+                    <li>Click <strong>Install</strong> and wait for the process to complete.</li>
+                    <li>Click <strong>Finish</strong>.</li>
+                </ol>
+
+                <h4 id="install-macos">On macOS</h4>
+                <ol class="steps">
+                    <li>Open the downloaded <code>.dmg</code> file.</li>
+                    <li>Drag the Thonny icon into the <strong>Applications</strong> folder.</li>
+                    <li>Open <strong>Applications</strong> and double-click Thonny.</li>
+                    <li>If macOS warns about an unidentified developer, go to <span class="ui-path">System Settings &gt; Privacy &amp; Security</span> and click <strong>Open Anyway</strong>.</li>
+                </ol>
+
+                <h3 id="launch-thonny">Step 3: Launch Thonny</h3>
+                <ul>
+                    <li><strong>Windows:</strong> Search for "Thonny" in the Start Menu and click it.</li>
+                    <li><strong>macOS:</strong> Open the <strong>Applications</strong> folder and double-click Thonny.</li>
+                </ul>
+
+                <!-- IMAGE PROVISION: Thonny IDE screenshot -->
+                <figure class="lab-figure" role="group" aria-labelledby="thonny-screenshot-caption">
+                    <img src="" data-suggested-filename="assets/images/thonny-interface.png" 
+                         alt="Thonny IDE interface showing the editor area at the top with a white background, the shell area at the bottom with a gray background, and a toolbar with a green play button at the top."
+                         width="800" height="500"
+                         loading="lazy">
+                    <figcaption id="thonny-screenshot-caption">
+                        Figure 1: The Thonny IDE interface. The top area is the editor (where you write code). The bottom area is the shell (where you see output).
+                    </figcaption>
+                </figure>
+
+                <p>You should see a window with the editor area at the top and the shell area at the bottom.</p>
+            </section>
+
+            <!-- ============================================================ -->
+            <!-- SECTION 3: CONNECTING THE ARDUINO BOARD                      -->
+            <!-- ============================================================ -->
+            <section id="connect-board" class="section" aria-labelledby="connect-heading">
+                <h2 id="connect-heading">Part 2: Connecting Your Arduino NANO BLE Sense</h2>
+
+                <h3 id="identify-board">Step 1: Identify the Board</h3>
+                <p>Your Arduino NANO BLE Sense Rev 2 has the following components:</p>
+                <ul>
+                    <li>A small <strong>RGB LED</strong> (red, green, blue) near the center.</li>
+                    <li>A <strong>USB-C port</strong> on one end.</li>
+                    <li>A <strong>reset button</strong> (labeled "RST").</li>
+                    <li>Several pins along the sides for connecting sensors.</li>
+                </ul>
+
+                <!-- IMAGE PROVISION: Arduino board photo -->
+                <figure class="lab-figure" role="group" aria-labelledby="board-photo-caption">
+                    <img src="" data-suggested-filename="assets/images/arduino-nano-ble-sense.jpg" 
+                         alt="Top-down photograph of the Arduino NANO BLE Sense Rev 2 board showing the USB-C port on the left, the small RGB LED in the center, the RST button near the top edge, and rows of pins along both long sides."
+                         width="600" height="400"
+                         loading="lazy">
+                    <figcaption id="board-photo-caption">
+                        Figure 2: Arduino NANO BLE Sense Rev 2. The RGB LED is located near the center. The USB-C port is on the left edge.
+                    </figcaption>
+                </figure>
+
+                <h3 id="connect-usb">Step 2: Connect via USB</h3>
+                <ol class="steps">
+                    <li>Take the <strong>USB-C cable</strong> and plug the small end into the Arduino board.</li>
+                    <li>Plug the <strong>USB-A end</strong> into an available USB port on your computer.</li>
+                    <li>You should see a small <strong>green power LED</strong> light up on the board. This means the board is receiving power.</li>
+                </ol>
+
+                <!-- TIP CALLOUT -->
+                <div class="instructions" role="note" aria-label="Tip">
+                    <strong>💡 Tip:</strong> Use a data-capable USB cable (not just a charging cable). If the computer doesn't recognize the board, try a different cable or USB port.
+                </div>
+
+                <h3 id="select-interpreter">Step 3: Select the MicroPython Interpreter in Thonny</h3>
+                <ol class="steps">
+                    <li>In Thonny, go to <span class="ui-path">Tools &gt; Options</span> (on macOS: <span class="ui-path">Thonny &gt; Settings</span>).</li>
+                    <li>Click the <strong>Interpreter</strong> tab.</li>
+                    <li>Select <strong>MicroPython for Arduino</strong> (or <strong>MicroPython (generic)</strong> if "Arduino" is not listed).</li>
+                    <li>In the <strong>Port</strong> dropdown, select the port that corresponds to your Arduino board:
+                        <ul>
+                            <li><strong>Windows:</strong> It will look like <code>COM3</code>, <code>COM4</code>, etc. (You may see multiple COM ports — try each one if unsure).</li>
+                            <li><strong>macOS:</strong> It will look like <code>/dev/cu.usbmodem...</code> or <code>/dev/cu.wchusbserial...</code>.</li>
+                        </ul>
+                    </li>
+                    <li>Click <strong>OK</strong>.</li>
+                </ol>
+
+                <h3 id="verify-connection">Step 4: Verify the Connection</h3>
+                <ol class="steps">
+                    <li>Click the <strong>Start interpreter</strong> button (green play icon) in the toolbar, or press <span class="kbd">F5</span>.</li>
+                    <li>In the shell at the bottom, type the following and press <span class="kbd">Enter</span>:</li>
+                </ol>
+
+                <!-- CODE BLOCK: Verification test -->
+                <div class="code-block">
+                    <span class="code-caption">Python — Verify Connection</span>
+                    <pre><code>print("Hello, World!")</code></pre>
+                </div>
+
+                <p>You should see this output in the shell:</p>
+
+                <div class="code-block">
+                    <span class="code-caption">Shell Output</span>
+                    <pre><code>>>> print("Hello, World!")
+Hello, World!
+>>>></code></pre>
+                </div>
+
+                <p>If you see <code>Hello, World!</code>, congratulations! Your board is connected and ready to go.</p>
+
+                <!-- TROUBLESHOOTING CALLOUT -->
+                <div class="callout-warning" role="alert" aria-label="Troubleshooting tips">
+                    <strong>🔧 Troubleshooting:</strong>
+                    <ul style="margin-top: 0.5rem; margin-bottom: 0;">
+                        <li><strong>Nothing happens when you press F5?</strong> Make sure you selected the correct interpreter and port in <span class="ui-path">Tools &gt; Options</span>.</li>
+                        <li><strong>You see an error like <code>OSError: [Errno 5] EIO</code>?</strong> The board may not be properly connected. Try a different USB port or cable.</li>
+                        <li><strong>You see multiple COM ports?</strong> Unplug the Arduino, note which COM port disappears, then plug it back in. That's your board's port.</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- ============================================================ -->
+            <!-- SECTION 4: YOUR FIRST MICROPYTHON PROGRAM                    -->
+            <!-- ============================================================ -->
+            <section id="first-program" class="section" aria-labelledby="first-program-heading">
+                <h2 id="first-program-heading">Part 3: Your First MicroPython Program — Blinking the LED</h2>
+
+                <h3 id="understand-hardware">Understanding the Hardware</h3>
+                <p>The Arduino NANO BLE Sense has a <strong>built-in LED connected to Pin 13</strong>. This is the same LED used in every beginner's embedded programming journey. On this board:</p>
+                <ul>
+                    <li>Setting Pin 13 to <code>1</code> turns the LED <strong>ON</strong>.</li>
+                    <li>Setting Pin 13 to <code>0</code> turns the LED <strong>OFF</strong>.</li>
+                </ul>
+
+                <!-- IMAGE PROVISION: Pin 13 LED location -->
+                <figure class="lab-figure" role="group" aria-labelledby="led-pin-caption">
+                    <img src="" data-suggested-filename="assets/images/led-pin13-closeup.jpg" 
+                         alt="Close-up photograph of the Arduino NANO BLE Sense board with an arrow pointing to the small built-in LED near the center of the board, labeled 'Pin 13 LED'."
+                         width="600" height="400"
+                         loading="lazy">
+                    <figcaption id="led-pin-caption">
+                        Figure 3: The built-in LED on Pin 13. This is the component we will control in this lab.
+                    </figcaption>
+                </figure>
+
+                <h3 id="write-code">Step 1: Write the Code</h3>
+                <p>Click in the <strong>editor</strong> area (the top white space) and type the following code exactly as shown:</p>
+
+                <!-- CODE BLOCK: Basic blink program -->
+                <div class="code-block">
+                    <span class="code-caption">Python — lab1_blink.py</span>
+                    <pre><code>import machine
+import time
+
+# Create a variable for the LED on Pin 13
+led = machine.Pin(13, machine.Pin.OUT)
+
+print("Starting blink program...")
+
+while True:
+    led.value(1)        # Turn LED ON
+    time.sleep(1)       # Wait 1 second
+    led.value(0)        # Turn LED OFF
+    time.sleep(1)       # Wait 1 second</code></pre>
+                </div>
+
+                <h3 id="save-file">Step 2: Save Your File</h3>
+                <ol class="steps">
+                    <li>Click <span class="ui-path">File &gt; Save</span> (or press <span class="kbd">Ctrl</span>+<span class="kbd">S</span> on Windows / <span class="kbd">Cmd</span>+<span class="kbd">S</span> on macOS).</li>
+                    <li>Choose where to save the file. A good location is your <strong>Desktop</strong> or a new folder called <code>ProgrammingFundamentals</code>.</li>
+                    <li>Name the file <code>lab1_blink.py</code>.</li>
+                    <li>Click <strong>Save</strong>.</li>
+                </ol>
+
+                <div class="instructions" role="note" aria-label="Why save as .py">
+                    <strong>💡 Why save as <code>.py</code>?</strong> The <code>.py</code> extension tells Thonny (and your computer) that this is a Python file.
+                </div>
+
+                <h3 id="run-program">Step 3: Run the Program</h3>
+                <ol class="steps">
+                    <li>Make sure your cursor is in the editor (click somewhere in the code area).</li>
+                    <li>Click the <strong>green Run button</strong> (▶) in the toolbar, or press <span class="kbd">F5</span>.</li>
+                    <li>Watch the small LED on your Arduino board!</li>
+                </ol>
+
+                <p><strong>What should happen:</strong> The LED should blink on and off, once per second, forever.</p>
+
+                <div class="code-block">
+                    <span class="code-caption">Expected Output</span>
+                    <pre><code>>>> Starting blink program...
+[LED blinks on, waits 1 second, blinks off, waits 1 second, repeats...]</code></pre>
+                </div>
+
+                <h3 id="stop-program">Step 4: Stop the Program</h3>
+                <p>If you want to stop the blinking:</p>
+                <ul>
+                    <li>Click the <strong>Stop button</strong> (■, a red square) in the toolbar, or press <span class="kbd">Ctrl</span>+<span class="kbd">C</span> in the shell.</li>
+                </ul>
+            </section>
+
+            <!-- ============================================================ -->
+            <!-- SECTION 5: UNDERSTANDING THE CODE                            -->
+            <!-- ============================================================ -->
+            <section id="understand-code" class="section" aria-labelledby="understand-code-heading">
+                <h2 id="understand-code-heading">Part 4: Understanding the Code</h2>
+                <p>Let's break down every line of the program:</p>
+
+                <!-- CODE BLOCK: Annotated code -->
+                <div class="code-block">
+                    <span class="code-caption">Python — Annotated</span>
+                    <pre><code>import machine          # Line 1: Import the hardware control library
+import time             # Line 2: Import the time library for delays
+
+led = machine.Pin(13, machine.Pin.OUT)  # Line 4: Configure Pin 13 as an output
+
+print("Starting blink program...")  # Line 6: Print a message to the shell
+
+while True:              # Line 8: Start an infinite loop
+    led.value(1)         # Line 9: Set Pin 13 to HIGH (LED ON)
+    time.sleep(1)        # Line 10: Pause for 1 second
+    led.value(0)         # Line 11: Set Pin 13 to LOW (LED OFF)
+    time.sleep(1)        # Line 12: Pause for 1 second</code></pre>
+                </div>
+
+                <h3 id="key-concepts">Key Concepts Explained</h3>
+
+                <!-- TABLE: Key concepts -->
+                <div class="table-responsive" role="region" aria-label="Key concepts table">
+                    <table class="tt-table" summary="Explanation of key MicroPython concepts used in the blink program">
+                        <thead>
+                            <tr>
+                                <th scope="col">Concept</th>
+                                <th scope="col">What It Does</th>
+                                <th scope="col">Why It Matters</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>import machine</code></td>
+                                <td>Gives us access to control pins, PWM, sensors, etc.</td>
+                                <td>Without this, we can't talk to the hardware.</td>
+                            </tr>
+                            <tr>
+                                <td><code>import time</code></td>
+                                <td>Gives us <code>sleep()</code>, <code>ticks_ms()</code>, and other timing functions.</td>
+                                <td>We need delays so the LED doesn't blink too fast to see.</td>
+                            </tr>
+                            <tr>
+                                <td><code>machine.Pin(13, machine.Pin.OUT)</code></td>
+                                <td>Tells the board: "Pin 13 will send signals out."</td>
+                                <td>Pins can be <strong>inputs</strong> (reading sensors) or <strong>outputs</strong> (controlling LEDs, motors).</td>
+                            </tr>
+                            <tr>
+                                <td><code>led.value(1)</code></td>
+                                <td>Sends a HIGH signal (3.3 volts) to Pin 13.</td>
+                                <td>This turns the LED on.</td>
+                            </tr>
+                            <tr>
+                                <td><code>led.value(0)</code></td>
+                                <td>Sends a LOW signal (0 volts) to Pin 13.</td>
+                                <td>This turns the LED off.</td>
+                            </tr>
+                            <tr>
+                                <td><code>time.sleep(1)</code></td>
+                                <td>Pauses the program for 1 second.</td>
+                                <td>Without this, the LED would blink so fast it would look like it's always on.</td>
+                            </tr>
+                            <tr>
+                                <td><code>while True:</code></td>
+                                <td>Creates a loop that never ends.</td>
+                                <td>Embedded programs (like blinking LEDs) need to keep running forever.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- ============================================================ -->
+            <!-- SECTION 6: APPENDIX                                          -->
+            <!-- ============================================================ -->
+            <section id="appendix" class="section" aria-labelledby="appendix-heading">
+                <h2 id="appendix-heading">Appendix — Quick Reference</h2>
+
+                <h3 id="thonny-shortcuts">Common Thonny Shortcuts</h3>
+                <div class="table-responsive" role="region" aria-label="Thonny shortcuts table">
+                    <table class="tt-table" summary="Keyboard shortcuts for common Thonny actions">
+                        <thead>
+                            <tr>
+                                <th scope="col">Action</th>
+                                <th scope="col">Windows / Linux</th>
+                                <th scope="col">macOS</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Run program</td>
+                                <td><span class="kbd">F5</span></td>
+                                <td><span class="kbd">F5</span></td>
+                            </tr>
+                            <tr>
+                                <td>Stop program</td>
+                                <td><span class="kbd">Ctrl</span>+<span class="kbd">C</span></td>
+                                <td><span class="kbd">Cmd</span>+<span class="kbd">C</span></td>
+                            </tr>
+                            <tr>
+                                <td>Save file</td>
+                                <td><span class="kbd">Ctrl</span>+<span class="kbd">S</span></td>
+                                <td><span class="kbd">Cmd</span>+<span class="kbd">S</span></td>
+                            </tr>
+                            <tr>
+                                <td>New file</td>
+                                <td><span class="kbd">Ctrl</span>+<span class="kbd">N</span></td>
+                                <td><span class="kbd">Cmd</span>+<span class="kbd">N</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h3 id="pin-reference">MicroPython Pin Reference</h3>
+                <div class="table-responsive" role="region" aria-label="Pin reference table">
+                    <table class="tt-table" summary="Pin reference for Arduino NANO BLE Sense Rev 2">
+                        <thead>
+                            <tr>
+                                <th scope="col">Pin Number</th>
+                                <th scope="col">Function on NANO BLE Sense</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>13</code></td>
+                                <td>Built-in LED (also used for SPI/I2C on some boards)</td>
+                            </tr>
+                            <tr>
+                                <td><code>0–12</code></td>
+                                <td>General-purpose digital I/O (some shared with sensors)</td>
+                            </tr>
+                            <tr>
+                                <td><code>A0–A7</code></td>
+                                <td>Analog input pins</td>
+                            </tr>
+                            <tr>
+                                <td><code>SDA</code></td>
+                                <td>I2C data line</td>
+                            </tr>
+                            <tr>
+                                <td><code>SCL</code></td>
+                                <td>I2C clock line</td>
+                            </tr>
+                            <tr>
+                                <td><code>GND</code></td>
+                                <td>Ground (0 volts)</td>
+                            </tr>
+                            <tr>
+                                <td><code>3.3V</code></td>
+                                <td>Power output (3.3 volts)</td>
+                            </tr>
+                            <tr>
+                                <td><code>5V</code></td>
+                                <td>Power output (5 volts, if powered via USB)</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h3 id="useful-functions">Useful MicroPython Functions</h3>
+                <div class="table-responsive" role="region" aria-label="Useful functions table">
+                    <table class="tt-table" summary="Commonly used MicroPython functions">
+                        <thead>
+                            <tr>
+                                <th scope="col">Function</th>
+                                <th scope="col">What It Does</th>
+                                <th scope="col">Example</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>machine.Pin(pin, mode)</code></td>
+                                <td>Create a pin object</td>
+                                <td><code>led = machine.Pin(13, machine.Pin.OUT)</code></td>
+                            </tr>
+                            <tr>
+                                <td><code>pin.value(val)</code></td>
+                                <td>Set or get pin state</td>
+                                <td><code>led.value(1)</code></td>
+                            </tr>
+                            <tr>
+                                <td><code>time.sleep(seconds)</code></td>
+                                <td>Pause for given seconds</td>
+                                <td><code>time.sleep(0.5)</code></td>
+                            </tr>
+                            <tr>
+                                <td><code>time.sleep_ms(ms)</code></td>
+                                <td>Pause for given milliseconds</td>
+                                <td><code>time.sleep_ms(500)</code></td>
+                            </tr>
+                            <tr>
+                                <td><code>print(text)</code></td>
+                                <td>Display text in the shell</td>
+                                <td><code>print("LED is on")</code></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- LESSON PAGER — Previous / Next navigation -->
+            <nav class="pager" aria-label="Lab navigation">
+                <a class="pager-prev" href="#" aria-disabled="true" aria-label="No previous lab (this is the first lab)">
+                    <span class="pager-label">Previous lab</span>
+                    <span class="pager-title">—</span>
+                </a>
+                <a class="pager-next" href="../lab02-color-theory/index.html" aria-label="Go to Lab 2: Color Theory">
+                    <span class="pager-label">Next lab</span>
+                    <span class="pager-title">Lab 2: Color Theory →</span>
+                </a>
+            </nav>
+        </main>
+
+        <!-- TABLE OF CONTENTS — "On this page" menu -->
+        <aside class="toc" data-toc aria-label="On this page">
+            <details open>
+                <summary>On this page</summary>
+                <nav aria-label="Table of contents">
+                    <ul>
+                        <li><a href="#objectives">Learning Objectives</a></li>
+                        <li><a href="#install-thonny">Installing Thonny IDE</a></li>
+                        <li><a href="#connect-board">Connecting the Board</a></li>
+                        <li><a href="#first-program">First MicroPython Program</a></li>
+                        <li><a href="#understand-code">Understanding the Code</a></li>
+                        <li><a href="#appendix">Appendix</a></li>
+                    </ul>
+                </nav>
+            </details>
+        </aside>
+    </div>
+
+    <!-- SITE FOOTER -->
+    <footer class="site-footer" role="contentinfo">
+        <div class="footer-inner">
+            <p>Programming Fundamentals · The CE Lounge · Spring 2026</p>
+            <p class="bits" aria-hidden="true">0 1 1 0 · 1 0 0 1</p>
+        </div>
+    </footer>
+</body>
+</html>

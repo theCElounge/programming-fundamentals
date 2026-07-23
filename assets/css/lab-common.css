@@ -1,0 +1,323 @@
+/* ==========================================================================
+   LAB-COMMON STYLES — Programming Fundamentals
+   Shared by every lab page (link this AFTER site.css, BEFORE any
+   lab-specific lab-styles.css). Provides:
+   - Figures with images / accessible image placeholders
+   - Video embeds
+   - Exercise cards
+   - Code blocks with copy buttons
+   - Lab meta list, quiz textarea, lesson CTA
+   Do not duplicate these rules in a lab's own lab-styles.css — put
+   only that lab's unique overrides there.
+   ========================================================================== */
+
+/* ------------------------------------------------------------
+   1. FIGURES & IMAGES
+   ========================================================================== */
+.lab-figure {
+    margin: 2rem 0;
+    text-align: center;
+}
+.lab-figure img {
+    max-width: 100%;
+    height: auto;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-md);
+    transition: var(--transition-smooth);
+}
+.lab-figure img:hover {
+    box-shadow: var(--shadow-lg);
+    transform: scale(1.01);
+}
+.lab-figure figcaption {
+    margin-top: 0.75rem;
+    font-size: 0.92rem;
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+/* Image placeholder (when image is missing).
+   Screen readers still announce the <img>'s alt text as normal —
+   this only changes what sighted users/editors see: an obvious
+   dashed box instead of a browser's broken-image icon. */
+.lab-figure img[src=""],
+.lab-figure img:not([src]) {
+    display: block;
+    width: 100%;
+    min-height: 220px;
+    background:
+        linear-gradient(45deg, var(--code-bg) 25%, transparent 25%) -12px 0/24px 24px,
+        linear-gradient(-45deg, var(--code-bg) 25%, transparent 25%) -12px 0/24px 24px,
+        var(--card-bg);
+    border: 2px dashed var(--border-strong);
+    border-radius: var(--radius-md);
+    margin: 0 auto;
+}
+
+/* ------------------------------------------------------------
+   2. VIDEO EMBEDS
+   ========================================================================== */
+.lab-video {
+    margin: 2rem 0;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    box-shadow: var(--shadow-md);
+}
+.lab-video video {
+    display: block;
+    width: 100%;
+    max-height: 480px;
+    background: #000;
+}
+.lab-video figcaption {
+    padding: 0.75rem 1rem;
+    background: var(--card-bg);
+    font-size: 0.92rem;
+    color: var(--text-muted);
+    font-style: italic;
+    border-top: 1px solid var(--border-color);
+}
+
+/* Video placeholder (when video file is missing) */
+.lab-video video[src=""],
+.lab-video video:not([src]) {
+    display: block;
+    min-height: 200px;
+    background: var(--code-bg);
+    border: 2px dashed var(--border-strong);
+    margin: 0;
+}
+
+/* ------------------------------------------------------------
+   3. EXERCISE CARDS
+   ========================================================================== */
+.exercise-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem 1.75rem;
+    margin: 1.5rem 0;
+    box-shadow: var(--shadow-sm);
+    transition: var(--transition-smooth);
+}
+.exercise-card:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+}
+.exercise-card h4 {
+    margin-top: 0;
+    margin-bottom: 0.75rem;
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 1.1rem;
+    color: var(--text-heading);
+}
+.exercise-card .difficulty {
+    display: inline-block;
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 0.25rem 0.75rem;
+    border-radius: 999px;
+    margin-bottom: 0.75rem;
+}
+.exercise-card .difficulty.easy {
+    background: var(--accent-soft);
+    color: var(--accent-color);
+    border: 1px solid var(--accent-color);
+}
+.exercise-card .difficulty.medium {
+    background: #fff7ed;
+    color: #c2410c;
+    border: 1px solid #f59e0b;
+}
+.exercise-card .difficulty.hard {
+    background: var(--error-soft);
+    color: var(--error-color);
+    border: 1px solid var(--error-color);
+}
+
+/* ------------------------------------------------------------
+   4. CODE BLOCKS WITH COPY BUTTON
+   ========================================================================== */
+.code-block {
+    position: relative;
+    margin: 1.25rem 0 1.75rem;
+}
+.code-block pre {
+    margin: 0;
+    padding: 1.1rem 1.3rem;
+    border: 1px solid var(--border-color);
+    font-size: 0.92rem;
+    line-height: 1.65;
+    tab-size: 4;
+    overflow-x: auto;
+}
+.code-block .code-caption {
+    display: block;
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    border: 1px solid var(--border-color);
+    border-bottom: none;
+    border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+    background: var(--card-bg);
+    padding: 0.45rem 1.3rem;
+}
+.code-block .code-caption + pre {
+    border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+}
+
+/* Copy button for code blocks */
+.code-block .copy-btn {
+    position: absolute;
+    top: 2.5rem;
+    right: 0.75rem;
+    background: var(--code-bg);
+    color: var(--text-muted);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    padding: 0.35rem 0.75rem;
+    font-size: 0.82rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: var(--transition-smooth);
+    opacity: 0;
+}
+.code-block:hover .copy-btn {
+    opacity: 1;
+}
+.code-block .copy-btn:hover {
+    background: var(--primary-soft);
+    color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+.code-block .copy-btn:focus-visible {
+    opacity: 1;
+}
+.code-block .copy-btn[aria-label="Copy code copied"] {
+    background: var(--accent-soft);
+    color: var(--accent-color);
+    border-color: var(--accent-color);
+}
+
+/* ------------------------------------------------------------
+   5. LAB META LIST (definition list styling)
+   ========================================================================== */
+.lab-meta-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 0.75rem 1.5rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+.lab-meta-list dt {
+    font-weight: 600;
+    color: var(--text-heading);
+    font-size: 0.92rem;
+}
+.lab-meta-list dd {
+    margin: 0;
+    color: var(--text-main);
+    font-size: 0.95rem;
+}
+
+/* ------------------------------------------------------------
+   6. QUIZ TEXTAREA STYLING
+   ========================================================================== */
+.quiz-textarea {
+    display: block;
+    width: 100%;
+    margin-top: 0.5rem;
+    font-family: var(--font-body);
+    font-size: 0.95rem;
+    color: var(--text-main);
+    background: var(--card-bg);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    padding: 0.75rem;
+    resize: vertical;
+    transition: var(--transition-smooth);
+}
+.quiz-textarea:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary-color) 22%, transparent);
+}
+
+/* ------------------------------------------------------------
+   7. LESSON CTA BUTTON
+   ========================================================================== */
+.lesson-cta {
+    display: inline-block;
+    margin-top: 1rem;
+    padding: 0.75rem 1.5rem;
+    background: var(--primary-color);
+    color: #fff;
+    text-decoration: none;
+    border-radius: var(--radius-sm);
+    font-weight: 600;
+    font-size: 0.98rem;
+    transition: var(--transition-smooth);
+    box-shadow: var(--shadow-sm);
+}
+.lesson-cta:hover {
+    background: var(--primary-hover);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    color: #fff;
+}
+[data-theme="dark"] .lesson-cta {
+    color: #0f1320;
+}
+[data-theme="dark"] .lesson-cta:hover {
+    color: #0f1320;
+}
+
+/* ------------------------------------------------------------
+   8. RESPONSIVE ADJUSTMENTS
+   ========================================================================== */
+@media (max-width: 640px) {
+    .lab-figure {
+        margin: 1.5rem 0;
+    }
+    .lab-figure img {
+        border-radius: var(--radius-sm);
+    }
+    .exercise-card {
+        padding: 1.25rem;
+    }
+    .code-block .copy-btn {
+        opacity: 1;
+    }
+    .lab-meta-list {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ------------------------------------------------------------
+   9. PRINT STYLES
+   ========================================================================== */
+@media print {
+    .code-block .copy-btn {
+        display: none;
+    }
+    .lab-figure img {
+        max-width: 80%;
+        margin: 0 auto;
+    }
+    .lab-video {
+        break-inside: avoid;
+    }
+    .exercise-card {
+        break-inside: avoid;
+    }
+}

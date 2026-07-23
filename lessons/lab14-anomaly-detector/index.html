@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Lab 14: Anomaly Detector · Programming Fundamentals</title>
+    <meta name="description" content="Build a fault-tolerant HS3003 monitor using try/except to handle both sensor failures and out-of-range anomalies.">
+
+    <link rel="icon" type="image/png" href="../../assets/images/favicon-32.png" sizes="32x32">
+    <link rel="icon" type="image/png" href="../../assets/images/favicon-16.png" sizes="16x16">
+    <link rel="apple-touch-icon" href="../../assets/images/apple-touch-icon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="../../assets/css/site.css">
+    <link rel="stylesheet" href="../../assets/css/lab-common.css">
+    <link rel="stylesheet" href="lab-styles.css">
+
+    <script src="../../assets/js/site.js" defer></script>
+    <script src="../../assets/js/lab-common.js" defer></script>
+</head>
+<body>
+    <a class="skip-link" href="#main-content">Skip to main content</a>
+
+    <header class="site-header" role="banner">
+        <div class="header-inner">
+            <a class="brand" href="../../index.html" aria-label="Programming Fundamentals — Home">
+                <img class="brand-mark" src="../../assets/images/logo-mark-64.png" alt="" width="36" height="36">
+                <span>Programming Fundamentals<span class="brand-course">The CE Lounge · Lab Materials</span></span>
+            </a>
+            <nav class="site-nav" aria-label="Course">
+                <ul>
+                    <li><a href="../../index.html">All labs</a></li>
+                </ul>
+            </nav>
+            <button type="button" class="theme-toggle" aria-pressed="false" aria-label="Switch to dark theme">🌙<span class="theme-label">Dark</span></button>
+        </div>
+    </header>
+
+    <div class="hero">
+        <p class="eyebrow">
+            <span aria-hidden="true">Lab 014 / 014</span>
+            <span class="sr-only">Lab 14 of 14</span>
+        </p>
+        <h1>Lab <span class="accent">Anomaly Detector</span></h1>
+        <hr class="trace-rule" aria-hidden="true">
+        <p class="lede">Use Python's exception handling to build a monitor that survives sensor failures and flags out-of-range readings without ever crashing.</p>
+    </div>
+
+    <div class="page-grid">
+        <main id="main-content" class="content">
+
+            <section id="objectives" class="section" aria-labelledby="objectives-heading">
+                <h2 id="objectives-heading">Learning Objectives</h2>
+                <p>By the end of this lab, you will be able to:</p>
+                <ol>
+                    <li>Understand what an <strong>exception</strong> is and why programs raise them.</li>
+                    <li>Use <strong>try/except</strong> to handle errors without crashing the program.</li>
+                    <li>Distinguish between a <strong>sensor read failure</strong> and a <strong>valid-but-abnormal</strong> reading.</li>
+                    <li>Raise a custom exception when a reading is out of an expected range.</li>
+                    <li>Build a monitor that keeps running and reporting even when errors occur.</li>
+                </ol>
+
+                <div class="example-card" role="note" aria-label="Lab information">
+                    <h3 id="lab-meta-heading">Lab Information</h3>
+                    <dl class="lab-meta-list">
+                        <dt>Hardware</dt>
+                        <dd>HS3003 Temperature/Humidity Sensor (onboard, I2C)</dd>
+                        <dt>Duration</dt>
+                        <dd>75–100 minutes</dd>
+                        <dt>Prerequisites</dt>
+                        <dd>Lab 13: Morse Code Encoder</dd>
+                        <dt>Key Concepts</dt>
+                        <dd>Exception handling (try/except)</dd>
+                    </dl>
+                </div>
+            </section>
+
+            <section id="what-is-an-exception" class="section" aria-labelledby="what-is-an-exception-heading">
+                <h2 id="what-is-an-exception-heading">Part 1: What Is an Exception?</h2>
+                <p>Back in Lab 3, you read temperature and humidity from the HS3003. Every program you've written since Lab 1 has assumed the sensor <em>always</em> answers correctly. In the real world, that's not guaranteed: a loose connection, electrical noise, or a momentary I2C bus conflict can cause a read to fail. When that happens, Python raises an <strong>exception</strong> — a signal that something went wrong, which stops the program immediately unless it's handled.</p>
+
+                <div class="code-block">
+                    <span class="code-caption">Python — Shell</span>
+                    <pre><code>>>> 10 / 0
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+ZeroDivisionError: division by zero
+
+>>> int("not a number")
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+ValueError: invalid literal for int() with base 10: 'not a number'</code></pre>
+                </div>
+
+                <p>Without handling, an exception <strong>crashes the whole program</strong> — exactly what you don't want in a monitoring device that's supposed to run for hours or days unattended.</p>
+
+                <figure class="lab-figure" role="group" aria-labelledby="exception-crash-vs-handled-png-caption">
+                    <img src="" data-suggested-filename="assets/images/exception-crash-vs-handled.png"
+                         alt="Two side-by-side flow diagrams: the left one shows a program hitting an error and stopping abruptly with a red X, the right one shows the same error being caught and the program continuing to loop normally."
+                         width="700" height="420"
+                         loading="lazy">
+                    <figcaption id="exception-crash-vs-handled-png-caption">Figure 1: An unhandled exception stops the program; a handled one lets it keep running.</figcaption>
+                </figure>
+            </section>
+
+            <section id="try-except" class="section" aria-labelledby="try-except-heading">
+                <h2 id="try-except-heading">Part 2: try/except</h2>
+                <p>A <code>try</code>/<code>except</code> block lets your program attempt something risky, and recover gracefully if it fails, instead of crashing.</p>
+
+                <div class="code-block">
+                    <span class="code-caption">Python — try_except_basics.py</span>
+                    <pre><code>try:
+    result = 10 / 0
+    print("This line never runs")
+except ZeroDivisionError:
+    print("Caught it! Can't divide by zero.")
+
+print("Program keeps running after the error.")</code></pre>
+                </div>
+
+                <div class="table-responsive" role="region" aria-label="try/except structure">
+                    <table class="tt-table" summary="Parts of a try/except block">
+                        <thead><tr><th scope="col">Keyword</th><th scope="col">Purpose</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>try:</code></td><td>Code that might raise an exception.</td></tr>
+                            <tr><td><code>except ErrorType:</code></td><td>Runs only if that specific error occurs inside the <code>try</code> block.</td></tr>
+                            <tr><td><code>except Exception as e:</code></td><td>Catches any exception; <code>e</code> holds the error's message.</td></tr>
+                            <tr><td><code>finally:</code></td><td>Runs no matter what — whether an error happened or not.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <p>Applying this to a sensor read:</p>
+
+                <div class="code-block">
+                    <span class="code-caption">Python — safe_read.py</span>
+                    <pre><code>import machine
+from hs3003 import HS3003
+
+i2c = machine.I2C(1)
+sensor = HS3003(i2c)
+
+try:
+    temperature_c, humidity_percent = sensor.read()
+    print(f"Reading OK: {temperature_c:.1f} C, {humidity_percent:.1f}%")
+except OSError as e:
+    print("Sensor read failed:", e)</code></pre>
+                </div>
+
+                <div class="instructions" role="note" aria-label="Why OSError">
+                    <strong>💡 Why <code>OSError</code>?</strong> I2C communication failures in MicroPython are typically raised as <code>OSError</code> (the same exception type used for many hardware and file errors). Catching the specific type you expect is better practice than blindly catching everything.
+                </div>
+            </section>
+
+            <section id="failure-vs-abnormal" class="section" aria-labelledby="failure-vs-abnormal-heading">
+                <h2 id="failure-vs-abnormal-heading">Part 3: Read Failure vs. Abnormal Reading</h2>
+                <p>There are two very different kinds of "wrong" a monitoring program needs to tell apart:</p>
+                <ul>
+                    <li><strong>Read failure</strong> — the sensor didn't answer at all (a communication error). This is a <em>Python exception</em>.</li>
+                    <li><strong>Abnormal reading</strong> — the sensor answered successfully, but the number itself is outside a sane range (like <code>150°C</code> in a normal room). This is a <em>valid float that fails a business rule</em>, not a Python error — <strong>unless</strong> we deliberately decide it should be.</li>
+                </ul>
+
+                <p>Python lets you <strong>raise your own exceptions</strong> with the <code>raise</code> keyword, which is exactly how we turn "this number looks wrong" into something a <code>try</code>/<code>except</code> block can catch and handle consistently, right alongside real hardware failures.</p>
+
+                <div class="code-block">
+                    <span class="code-caption">Python — anomaly_check.py</span>
+                    <pre><code>MIN_REASONABLE_TEMP_C = -10
+MAX_REASONABLE_TEMP_C = 50
+MIN_REASONABLE_HUMIDITY = 0
+MAX_REASONABLE_HUMIDITY = 100
+
+class SensorAnomalyError(Exception):
+    """Raised when a sensor reading is outside a sane range."""
+    pass
+
+def check_reading(temperature_c, humidity_percent):
+    if not (MIN_REASONABLE_TEMP_C <= temperature_c <= MAX_REASONABLE_TEMP_C):
+        raise SensorAnomalyError(f"Temperature out of range: {temperature_c} C")
+    if not (MIN_REASONABLE_HUMIDITY <= humidity_percent <= MAX_REASONABLE_HUMIDITY):
+        raise SensorAnomalyError(f"Humidity out of range: {humidity_percent}%")</code></pre>
+                </div>
+
+                <div class="instructions" role="note" aria-label="Custom exception classes">
+                    <strong>💡 Custom exception classes:</strong> <code>class SensorAnomalyError(Exception): pass</code> creates a brand-new exception type by <strong>inheriting</strong> from Python's built-in <code>Exception</code>. This is a preview of object-oriented programming — for now, all you need to know is that it behaves exactly like any other exception you can <code>raise</code> and <code>except</code>.
+                </div>
+            </section>
+
+            <section id="anomaly-monitor" class="section" aria-labelledby="anomaly-monitor-heading">
+                <h2 id="anomaly-monitor-heading">Part 4: Building the Anomaly Monitor</h2>
+                <p>Now let's combine both kinds of error-handling into one long-running monitor that never crashes, logs every problem it encounters, and keeps a running count.</p>
+
+                <div class="code-block">
+                    <span class="code-caption">Python — anomaly_monitor.py</span>
+                    <pre><code>import machine
+import time
+from hs3003 import HS3003
+
+i2c = machine.I2C(1)
+sensor = HS3003(i2c)
+
+MIN_TEMP_C, MAX_TEMP_C = -10, 50
+MIN_HUMIDITY, MAX_HUMIDITY = 0, 100
+
+class SensorAnomalyError(Exception):
+    pass
+
+def check_reading(temperature_c, humidity_percent):
+    if not (MIN_TEMP_C <= temperature_c <= MAX_TEMP_C):
+        raise SensorAnomalyError(f"Temperature out of range: {temperature_c} C")
+    if not (MIN_HUMIDITY <= humidity_percent <= MAX_HUMIDITY):
+        raise SensorAnomalyError(f"Humidity out of range: {humidity_percent}%")
+
+read_failures = 0
+anomalies = 0
+good_readings = 0
+
+print("Anomaly monitor running. Ctrl+C to stop.")
+
+while True:
+    try:
+        temperature_c, humidity_percent = sensor.read()
+        check_reading(temperature_c, humidity_percent)
+
+        good_readings += 1
+        print(f"OK: {temperature_c:.1f} C, {humidity_percent:.1f}%")
+
+    except OSError as e:
+        read_failures += 1
+        print(f"[SENSOR ERROR] Could not read sensor: {e}")
+
+    except SensorAnomalyError as e:
+        anomalies += 1
+        print(f"[ANOMALY] {e}")
+
+    except Exception as e:
+        # Safety net: catch anything unexpected so the monitor never crashes
+        print(f"[UNEXPECTED ERROR] {type(e).__name__}: {e}")
+
+    finally:
+        time.sleep(2)
+
+    if (good_readings + read_failures + anomalies) % 10 == 0:
+        print(f"--- Summary: {good_readings} OK, {anomalies} anomalies, {read_failures} failures ---")</code></pre>
+                </div>
+
+                <figure class="lab-figure" role="group" aria-labelledby="anomaly-monitor-shell-output-png-caption">
+                    <img src="" data-suggested-filename="assets/images/anomaly-monitor-shell-output.png"
+                         alt="Screenshot of the Thonny shell showing a mix of OK reading lines, an ANOMALY line, and a periodic summary line tallying counts of each category."
+                         width="700" height="420"
+                         loading="lazy">
+                    <figcaption id="anomaly-monitor-shell-output-png-caption">Figure 2: The monitor keeps running through both sensor failures and out-of-range readings, tallying each.</figcaption>
+                </figure>
+
+                <div class="instructions" role="note" aria-label="Order matters">
+                    <strong>💡 Order matters:</strong> Python checks <code>except</code> clauses top to bottom and uses the <strong>first</strong> one that matches. List more specific exception types (<code>OSError</code>, <code>SensorAnomalyError</code>) before a general <code>Exception</code> catch-all, or the specific ones will never be reached.
+                </div>
+            </section>
+
+            <section id="appendix" class="section" aria-labelledby="appendix-heading">
+                <h2 id="appendix-heading">Appendix — Quick Reference</h2>
+                <h3 id="exception-syntax">try/except/finally Syntax</h3>
+                <div class="code-block">
+                    <span class="code-caption">Python</span>
+                    <pre><code>try:
+    risky_code()
+except SpecificError as e:
+    handle_it(e)
+except Exception as e:
+    handle_anything_else(e)
+finally:
+    always_runs()</code></pre>
+                </div>
+
+                <h3 id="common-exceptions">Common Built-in Exceptions</h3>
+                <div class="table-responsive" role="region" aria-label="Common built-in exceptions">
+                    <table class="tt-table" summary="Common built-in Python exception types">
+                        <thead><tr><th scope="col">Exception</th><th scope="col">Typical cause</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>OSError</code></td><td>Hardware/I2C communication failure, file errors</td></tr>
+                            <tr><td><code>ValueError</code></td><td>Right type, wrong value (e.g. <code>int("abc")</code>)</td></tr>
+                            <tr><td><code>ZeroDivisionError</code></td><td>Dividing by zero</td></tr>
+                            <tr><td><code>KeyError</code></td><td>Missing dictionary key with <code>d[key]</code></td></tr>
+                            <tr><td><code>IndexError</code></td><td>List/string index out of range</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <nav class="pager" aria-label="Lab navigation">
+                <a class="pager-prev" href="../lab13-morse-code-encoder/index.html">
+                    <span class="pager-label">Previous lab</span>
+                    <span class="pager-title">Lab 13: Morse Code Encoder</span>
+                </a>
+                <a class="pager-next" href="#" aria-disabled="true" aria-label="No next lab (this is the final lab)">
+                    <span class="pager-label">Next lab</span>
+                    <span class="pager-title">—</span>
+                </a>
+            </nav>
+        </main>
+
+        <aside class="toc" data-toc aria-label="On this page">
+            <details open>
+                <summary>On this page</summary>
+                <nav aria-label="Table of contents">
+                    <ul>
+                        <li><a href="#objectives">Learning Objectives</a></li>
+                        <li><a href="#what-is-an-exception">Part 1: What Is an Exception?</a></li>
+                        <li><a href="#try-except">Part 2: try/except</a></li>
+                        <li><a href="#failure-vs-abnormal">Part 3: Read Failure vs. Abnormal Reading</a></li>
+                        <li><a href="#anomaly-monitor">Part 4: Building the Anomaly Monitor</a></li>
+                        <li><a href="#appendix">Appendix — Quick Reference</a></li>
+                    </ul>
+                </nav>
+            </details>
+        </aside>
+    </div>
+
+    <footer class="site-footer" role="contentinfo">
+        <div class="footer-inner">
+            <p>Programming Fundamentals · The CE Lounge · Spring 2026</p>
+            <p class="bits" aria-hidden="true">0 1 1 0 · 1 0 0 1</p>
+        </div>
+    </footer>
+</body>
+</html>

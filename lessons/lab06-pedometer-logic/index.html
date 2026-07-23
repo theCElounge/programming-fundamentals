@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Lab 6: Pedometer Logic · Programming Fundamentals</title>
+    <meta name="description" content="Detect footsteps from BMI270 accelerometer data using magnitude, thresholding, and boolean logic gates.">
+
+    <link rel="icon" type="image/png" href="../../assets/images/favicon-32.png" sizes="32x32">
+    <link rel="icon" type="image/png" href="../../assets/images/favicon-16.png" sizes="16x16">
+    <link rel="apple-touch-icon" href="../../assets/images/apple-touch-icon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="../../assets/css/site.css">
+    <link rel="stylesheet" href="../../assets/css/lab-common.css">
+    <link rel="stylesheet" href="lab-styles.css">
+
+    <script src="../../assets/js/site.js" defer></script>
+    <script src="../../assets/js/lab-common.js" defer></script>
+</head>
+<body>
+    <a class="skip-link" href="#main-content">Skip to main content</a>
+
+    <header class="site-header" role="banner">
+        <div class="header-inner">
+            <a class="brand" href="../../index.html" aria-label="Programming Fundamentals — Home">
+                <img class="brand-mark" src="../../assets/images/logo-mark-64.png" alt="" width="36" height="36">
+                <span>Programming Fundamentals<span class="brand-course">The CE Lounge · Lab Materials</span></span>
+            </a>
+            <nav class="site-nav" aria-label="Course">
+                <ul>
+                    <li><a href="../../index.html">All labs</a></li>
+                </ul>
+            </nav>
+            <button type="button" class="theme-toggle" aria-pressed="false" aria-label="Switch to dark theme">🌙<span class="theme-label">Dark</span></button>
+        </div>
+    </header>
+
+    <div class="hero">
+        <p class="eyebrow">
+            <span aria-hidden="true">Lab 006 / 014</span>
+            <span class="sr-only">Lab 6 of 14</span>
+        </p>
+        <h1>Lab <span class="accent">Pedometer Logic</span></h1>
+        <hr class="trace-rule" aria-hidden="true">
+        <p class="lede">Compute acceleration magnitude, use comparisons and thresholding to filter noise, and combine conditions with logic gates to count steps.</p>
+    </div>
+
+    <div class="page-grid">
+        <main id="main-content" class="content">
+
+            <section id="objectives" class="section" aria-labelledby="objectives-heading">
+                <h2 id="objectives-heading">Learning Objectives</h2>
+                <p>By the end of this lab, you will be able to:</p>
+                <ol>
+                    <li>Compute the total <strong>magnitude</strong> of acceleration from three axes.</li>
+                    <li>Use <strong>comparison operators</strong> to test sensor values against a threshold.</li>
+                    <li>Understand why raw sensor data needs <strong>thresholding</strong> to filter out noise.</li>
+                    <li>Combine conditions with <strong>logic gates</strong> (<code>and</code>, <code>or</code>, <code>not</code>).</li>
+                    <li>Detect and count steps from walking motion.</li>
+                </ol>
+
+                <div class="example-card" role="note" aria-label="Lab information">
+                    <h3 id="lab-meta-heading">Lab Information</h3>
+                    <dl class="lab-meta-list">
+                        <dt>Hardware</dt>
+                        <dd>BMI270 6-Axis IMU — Accelerometer (onboard, I2C)</dd>
+                        <dt>Duration</dt>
+                        <dd>60–90 minutes</dd>
+                        <dt>Prerequisites</dt>
+                        <dd>Lab 5: The Virtual Level</dd>
+                        <dt>Key Concepts</dt>
+                        <dd>Comparisons, thresholding, logic gates</dd>
+                    </dl>
+                </div>
+            </section>
+
+            <section id="magnitude" class="section" aria-labelledby="magnitude-heading">
+                <h2 id="magnitude-heading">Part 1: Measuring Total Motion</h2>
+                <p>In Lab 5, you looked at each axis separately to find tilt. For counting steps, we care about something different: the <strong>overall intensity</strong> of movement, regardless of direction. That's the <strong>magnitude</strong> of the acceleration vector, found with the 3D distance formula:</p>
+
+                <div class="formula-box" role="note" aria-label="Magnitude formula">
+                    magnitude = √(x² + y² + z²)
+                </div>
+
+                <div class="code-block">
+                    <span class="code-caption">Python — magnitude_test.py</span>
+                    <pre><code>import machine
+import math
+import time
+from bmi270 import BMI270
+
+i2c = machine.I2C(1)
+imu = BMI270(i2c)
+
+while True:
+    x, y, z = imu.read_accel()
+    magnitude = math.sqrt(x**2 + y**2 + z**2)
+    print(f"magnitude = {magnitude:.2f} g")
+    time.sleep(0.1)</code></pre>
+                </div>
+
+                <p>Sitting still, the magnitude should hover right around <code>1.00</code> g (just gravity). Give the board a firm tap or shake it — the magnitude spikes well above <code>1.00</code> for a moment.</p>
+
+                <figure class="lab-figure" role="group" aria-labelledby="magnitude-plot-still-vs-walking-png-caption">
+                    <img src="" data-suggested-filename="assets/images/magnitude-plot-still-vs-walking.png"
+                         alt="Line graph comparing acceleration magnitude over time: a flat line near 1.0g while still, versus a series of sharp repeating peaks above 1.0g while walking."
+                         width="700" height="420"
+                         loading="lazy">
+                    <figcaption id="magnitude-plot-still-vs-walking-png-caption">Figure 1: Magnitude stays flat when still, and spikes rhythmically while walking.</figcaption>
+                </figure>
+            </section>
+
+            <section id="comparisons" class="section" aria-labelledby="comparisons-heading">
+                <h2 id="comparisons-heading">Part 2: Comparisons and Thresholding</h2>
+                <p>Python's <strong>comparison operators</strong> (<code>&gt;</code>, <code>&lt;</code>, <code>&gt;=</code>, <code>&lt;=</code>, <code>==</code>, <code>!=</code>) each evaluate to a <strong>boolean</strong> — <code>True</code> or <code>False</code>. We use them to ask: "is this reading big enough to count as a step?"</p>
+
+                <div class="code-block">
+                    <span class="code-caption">Python — Shell</span>
+                    <pre><code>>>> magnitude = 1.45
+>>> magnitude > 1.2
+True
+>>> magnitude < 1.0
+False
+>>> is_step = magnitude > 1.2
+>>> is_step
+True</code></pre>
+                </div>
+
+                <p>The value we compare against — <code>1.2</code> in the example above — is called a <strong>threshold</strong>. Choosing a good threshold is the core challenge of this lab:</p>
+                <ul>
+                    <li><strong>Threshold too low:</strong> tiny vibrations and sensor noise get counted as steps (false positives).</li>
+                    <li><strong>Threshold too high:</strong> gentle steps go undetected (false negatives).</li>
+                </ul>
+
+                <div class="instructions" role="note" aria-label="Try it">
+                    <strong>🔬 Try it:</strong> Run the magnitude-printing loop from Part 1 while walking with the board in your hand. Note the typical peak values — that's your starting point for choosing a threshold.
+                </div>
+            </section>
+
+            <section id="logic-gates" class="section" aria-labelledby="logic-gates-heading">
+                <h2 id="logic-gates-heading">Part 3: Logic Gates — Combining Conditions</h2>
+                <p>A single threshold isn't quite enough to reliably detect a step — a value bouncing around the threshold can trigger many "steps" for a single real one. We need a condition with <strong>two</strong> parts: the magnitude must cross <em>above</em> a high threshold, <strong>and</strong> then drop back <em>below</em> a lower threshold, before we count the next step. Python's <code>and</code>, <code>or</code>, and <code>not</code> let us combine boolean conditions like this.</p>
+
+                <div class="table-responsive" role="region" aria-label="Boolean logic operators">
+                    <table class="tt-table" summary="Python boolean logic operators and their behavior">
+                        <thead><tr><th scope="col">Operator</th><th scope="col">True when…</th><th scope="col">Example</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>and</code></td><td>Both sides are <code>True</code></td><td><code>above and not_counted</code></td></tr>
+                            <tr><td><code>or</code></td><td>At least one side is <code>True</code></td><td><code>too_high or too_low</code></td></tr>
+                            <tr><td><code>not</code></td><td>Flips <code>True</code> ↔ <code>False</code></td><td><code>not stepped</code></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="code-block">
+                    <span class="code-caption">Python — Shell</span>
+                    <pre><code>>>> above_threshold = True
+>>> already_counted = False
+>>> above_threshold and not already_counted
+True</code></pre>
+                </div>
+            </section>
+
+            <section id="pedometer" class="section" aria-labelledby="pedometer-heading">
+                <h2 id="pedometer-heading">Part 4: Building the Pedometer</h2>
+                <p>Now let's combine magnitude, thresholding, and logic gates into a working step counter. We use a <strong>state flag</strong> (<code>peak_active</code>) so each footstep is only counted once, even though it stays above the threshold for several readings in a row.</p>
+
+                <div class="code-block">
+                    <span class="code-caption">Python — pedometer.py</span>
+                    <pre><code>import machine
+import math
+import time
+from bmi270 import BMI270
+
+i2c = machine.I2C(1)
+imu = BMI270(i2c)
+
+STEP_THRESHOLD = 1.25   # g — tune this for your walking style
+RESET_THRESHOLD = 1.05  # g — must drop below this before the next step counts
+
+step_count = 0
+peak_active = False
+
+print("Start walking with the board... Ctrl+C to stop.")
+
+while True:
+    x, y, z = imu.read_accel()
+    magnitude = math.sqrt(x**2 + y**2 + z**2)
+
+    if magnitude > STEP_THRESHOLD and not peak_active:
+        step_count += 1
+        peak_active = True
+        print(f"Step {step_count} detected! (magnitude={magnitude:.2f})")
+    elif magnitude < RESET_THRESHOLD and peak_active:
+        peak_active = False   # ready to detect the next step
+
+    time.sleep(0.05)</code></pre>
+                </div>
+
+                <p>Notice the two-threshold pattern (sometimes called <strong>hysteresis</strong>): using a high threshold to trigger and a separate, lower threshold to reset prevents one footstep's vibration from being counted multiple times.</p>
+
+                <figure class="lab-figure" role="group" aria-labelledby="pedometer-hysteresis-diagram-png-caption">
+                    <img src="" data-suggested-filename="assets/images/pedometer-hysteresis-diagram.png"
+                         alt="Diagram of a magnitude signal over time with a high dashed threshold line and a lower dashed reset line, showing a single peak crossing above the high line and back below the low line counting as exactly one step."
+                         width="700" height="420"
+                         loading="lazy">
+                    <figcaption id="pedometer-hysteresis-diagram-png-caption">Figure 2: Two thresholds (trigger and reset) prevent double-counting a single step.</figcaption>
+                </figure>
+
+                <div class="callout-warning" role="alert" aria-label="Troubleshooting">
+                    <strong>🔧 Troubleshooting:</strong>
+                    <ul style="margin-top: 0.5rem; margin-bottom: 0;">
+                        <li><strong>Counting way too many steps?</strong> Raise <code>STEP_THRESHOLD</code> or check that <code>RESET_THRESHOLD</code> is being reached between steps.</li>
+                        <li><strong>Missing real steps?</strong> Lower <code>STEP_THRESHOLD</code> slightly, or hold the board more rigidly (a loose grip absorbs motion).</li>
+                    </ul>
+                </div>
+            </section>
+
+            <section id="appendix" class="section" aria-labelledby="appendix-heading">
+                <h2 id="appendix-heading">Appendix — Quick Reference</h2>
+                <h3 id="comparison-ops">Comparison Operators</h3>
+                <div class="table-responsive" role="region" aria-label="Comparison operators">
+                    <table class="tt-table" summary="Python comparison operators">
+                        <thead><tr><th scope="col">Operator</th><th scope="col">Meaning</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>&gt;</code></td><td>Greater than</td></tr>
+                            <tr><td><code>&lt;</code></td><td>Less than</td></tr>
+                            <tr><td><code>&gt;=</code></td><td>Greater than or equal to</td></tr>
+                            <tr><td><code>&lt;=</code></td><td>Less than or equal to</td></tr>
+                            <tr><td><code>==</code></td><td>Equal to</td></tr>
+                            <tr><td><code>!=</code></td><td>Not equal to</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <nav class="pager" aria-label="Lab navigation">
+                <a class="pager-prev" href="../lab05-virtual-level/index.html">
+                    <span class="pager-label">Previous lab</span>
+                    <span class="pager-title">Lab 5: The Virtual Level</span>
+                </a>
+                <a class="pager-next" href="../lab07-fall-detector/index.html">
+                    <span class="pager-label">Next lab</span>
+                    <span class="pager-title">Lab 7: Fall Detector →</span>
+                </a>
+            </nav>
+        </main>
+
+        <aside class="toc" data-toc aria-label="On this page">
+            <details open>
+                <summary>On this page</summary>
+                <nav aria-label="Table of contents">
+                    <ul>
+                        <li><a href="#objectives">Learning Objectives</a></li>
+                        <li><a href="#magnitude">Part 1: Measuring Total Motion</a></li>
+                        <li><a href="#comparisons">Part 2: Comparisons and Thresholding</a></li>
+                        <li><a href="#logic-gates">Part 3: Logic Gates — Combining Conditions</a></li>
+                        <li><a href="#pedometer">Part 4: Building the Pedometer</a></li>
+                        <li><a href="#appendix">Appendix — Quick Reference</a></li>
+                    </ul>
+                </nav>
+            </details>
+        </aside>
+    </div>
+
+    <footer class="site-footer" role="contentinfo">
+        <div class="footer-inner">
+            <p>Programming Fundamentals · The CE Lounge · Spring 2026</p>
+            <p class="bits" aria-hidden="true">0 1 1 0 · 1 0 0 1</p>
+        </div>
+    </footer>
+</body>
+</html>

@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Lab 9: Digital Spirit Level · Programming Fundamentals</title>
+    <meta name="description" content="Fuse BMI270 accelerometer and gyroscope data with a complementary filter to build a drift-resistant digital spirit level.">
+
+    <link rel="icon" type="image/png" href="../../assets/images/favicon-32.png" sizes="32x32">
+    <link rel="icon" type="image/png" href="../../assets/images/favicon-16.png" sizes="16x16">
+    <link rel="apple-touch-icon" href="../../assets/images/apple-touch-icon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="../../assets/css/site.css">
+    <link rel="stylesheet" href="../../assets/css/lab-common.css">
+    <link rel="stylesheet" href="lab-styles.css">
+
+    <script src="../../assets/js/site.js" defer></script>
+    <script src="../../assets/js/lab-common.js" defer></script>
+</head>
+<body>
+    <a class="skip-link" href="#main-content">Skip to main content</a>
+
+    <header class="site-header" role="banner">
+        <div class="header-inner">
+            <a class="brand" href="../../index.html" aria-label="Programming Fundamentals — Home">
+                <img class="brand-mark" src="../../assets/images/logo-mark-64.png" alt="" width="36" height="36">
+                <span>Programming Fundamentals<span class="brand-course">The CE Lounge · Lab Materials</span></span>
+            </a>
+            <nav class="site-nav" aria-label="Course">
+                <ul>
+                    <li><a href="../../index.html">All labs</a></li>
+                </ul>
+            </nav>
+            <button type="button" class="theme-toggle" aria-pressed="false" aria-label="Switch to dark theme">🌙<span class="theme-label">Dark</span></button>
+        </div>
+    </header>
+
+    <div class="hero">
+        <p class="eyebrow">
+            <span aria-hidden="true">Lab 009 / 014</span>
+            <span class="sr-only">Lab 9 of 14</span>
+        </p>
+        <h1>Lab <span class="accent">Digital Spirit Level</span></h1>
+        <hr class="trace-rule" aria-hidden="true">
+        <p class="lede">Combine the BMI270's accelerometer and gyroscope with a complementary filter — your first hands-on introduction to sensor fusion.</p>
+    </div>
+
+    <div class="page-grid">
+        <main id="main-content" class="content">
+
+            <section id="objectives" class="section" aria-labelledby="objectives-heading">
+                <h2 id="objectives-heading">Learning Objectives</h2>
+                <p>By the end of this lab, you will be able to:</p>
+                <ol>
+                    <li>Combine accelerometer and gyroscope readings from the <strong>BMI270</strong> — true 6-axis sensing.</li>
+                    <li>Understand why each sensor alone gives an imperfect angle estimate.</li>
+                    <li>Implement a <strong>complementary filter</strong> — a simple form of <strong>sensor fusion</strong>.</li>
+                    <li>Use <strong>advanced trigonometry</strong> to integrate rotational speed into an angle over time.</li>
+                    <li>Build an accurate, drift-resistant digital spirit level.</li>
+                </ol>
+
+                <div class="example-card" role="note" aria-label="Lab information">
+                    <h3 id="lab-meta-heading">Lab Information</h3>
+                    <dl class="lab-meta-list">
+                        <dt>Hardware</dt>
+                        <dd>BMI270 6-Axis IMU — Accelerometer + Gyroscope (onboard, I2C)</dd>
+                        <dt>Duration</dt>
+                        <dd>90–120 minutes</dd>
+                        <dt>Prerequisites</dt>
+                        <dd>Lab 8: Sleep Tracker</dd>
+                        <dt>Key Concepts</dt>
+                        <dd>Advanced trigonometry, sensor fusion</dd>
+                    </dl>
+                </div>
+            </section>
+
+            <section id="two-flawed-methods" class="section" aria-labelledby="two-flawed-methods-heading">
+                <h2 id="two-flawed-methods-heading">Part 1: Two Sensors, Two Flaws</h2>
+                <p>In Lab 5, you calculated tilt purely from the accelerometer using <code>atan2()</code>. That works well when the board is <strong>still</strong>, but it has a real weakness: any sudden movement or vibration adds extra acceleration on top of gravity, throwing the angle off — accelerometer-based tilt is <strong>noisy</strong>.</p>
+                <p>You could instead estimate angle purely from the gyroscope, by adding up ("integrating") small rotation amounts over time:</p>
+
+                <div class="formula-box" role="note" aria-label="Gyroscope integration formula">
+                    angle_new = angle_old + (rotation_speed × elapsed_time)
+                </div>
+
+                <p>This is smooth and immune to vibration — but it has the opposite flaw: tiny measurement errors accumulate every time step, so the estimated angle slowly <strong>drifts</strong> away from the truth even when the board isn't moving at all.</p>
+
+                <figure class="lab-figure" role="group" aria-labelledby="accel-vs-gyro-vs-fused-graph-png-caption">
+                    <img src="" data-suggested-filename="assets/images/accel-vs-gyro-vs-fused-graph.png"
+                         alt="Line graph comparing three angle-estimate traces over time: a jittery noisy accelerometer-only line, a smooth but steadily drifting gyroscope-only line, and a smooth accurate fused line that tracks the true angle closely."
+                         width="700" height="420"
+                         loading="lazy">
+                    <figcaption id="accel-vs-gyro-vs-fused-graph-png-caption">Figure 1: Accelerometer angle is noisy; gyroscope angle drifts; the fused estimate does neither.</figcaption>
+                </figure>
+
+                <div class="table-responsive" role="region" aria-label="Accelerometer versus gyroscope for angle sensing">
+                    <table class="tt-table" summary="Strengths and weaknesses of accelerometer-only versus gyroscope-only angle estimation">
+                        <thead><tr><th scope="col"></th><th scope="col">Accelerometer angle</th><th scope="col">Gyroscope angle</th></tr></thead>
+                        <tbody>
+                            <tr><td>Short-term</td><td>Noisy, jumps around</td><td>Very smooth</td></tr>
+                            <tr><td>Long-term</td><td>Stable, no drift</td><td>Drifts steadily off-target</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="complementary-filter" class="section" aria-labelledby="complementary-filter-heading">
+                <h2 id="complementary-filter-heading">Part 2: The Complementary Filter</h2>
+                <p>Each sensor is exactly what the other is missing: the accelerometer is reliable <em>long-term</em> but noisy <em>short-term</em>; the gyroscope is smooth <em>short-term</em> but drifts <em>long-term</em>. A <strong>complementary filter</strong> blends the two, trusting the gyroscope for quick changes and quietly correcting with the accelerometer over time:</p>
+
+                <div class="formula-box" role="note" aria-label="Complementary filter formula">
+                    angle = 0.98 × (angle + gyro_rate × dt) + 0.02 × accel_angle
+                </div>
+
+                <p>This is a real technique used in drones, robots, and phones — it's a lightweight introduction to the broader field called <strong>sensor fusion</strong>: combining multiple imperfect sensors into one better estimate.</p>
+
+                <div class="instructions" role="note" aria-label="Reading the weights">
+                    <strong>💡 Reading the formula:</strong> The weights <code>0.98</code> and <code>0.02</code> must add up to <code>1.0</code>. A higher gyroscope weight (like <code>0.98</code>) makes the output smoother but slower to correct drift; a lower one makes it noisier but more responsive to the accelerometer's long-term accuracy.
+                </div>
+            </section>
+
+            <section id="implementation" class="section" aria-labelledby="implementation-heading">
+                <h2 id="implementation-heading">Part 3: Implementing the Digital Spirit Level</h2>
+                <div class="code-block">
+                    <span class="code-caption">Python — spirit_level.py</span>
+                    <pre><code>import machine
+import math
+import time
+from bmi270 import BMI270
+
+i2c = machine.I2C(1)
+imu = BMI270(i2c)
+
+GYRO_WEIGHT = 0.98
+ACCEL_WEIGHT = 1 - GYRO_WEIGHT
+
+# Start with an accelerometer-only estimate
+x, y, z = imu.read_accel()
+angle = math.degrees(math.atan2(x, z))
+
+last_time = time.ticks_ms()
+
+print("Digital spirit level running. Ctrl+C to stop.")
+
+while True:
+    x, y, z = imu.read_accel()
+    gx, gy, gz = imu.read_gyro()
+
+    now = time.ticks_ms()
+    dt = time.ticks_diff(now, last_time) / 1000  # seconds
+    last_time = now
+
+    accel_angle = math.degrees(math.atan2(x, z))
+    gyro_angle = angle + gy * dt   # integrate rotation speed into an angle
+
+    # Complementary filter: blend the two estimates
+    angle = GYRO_WEIGHT * gyro_angle + ACCEL_WEIGHT * accel_angle
+
+    level = "LEVEL" if abs(angle) < 1.0 else f"{angle:+.1f} deg"
+    print(level)
+
+    time.sleep(0.05)</code></pre>
+                </div>
+
+                <p>Try this side-by-side comparison: run the accelerometer-only code from Lab 5 and this fused version at the same time (or one after another) while gently tapping the table. The accelerometer-only reading will jump noticeably; the fused reading barely moves.</p>
+            </section>
+
+            <section id="calibration" class="section" aria-labelledby="calibration-heading">
+                <h2 id="calibration-heading">Part 4: Calibrating "Level"</h2>
+                <p>Every physical board has a tiny built-in tilt from manufacturing tolerances — true <code>0.0</code> degrees on the sensor might not be exactly level on the table. A real spirit level lets you <strong>zero</strong> it at a known-flat surface.</p>
+
+                <div class="code-block">
+                    <span class="code-caption">Python — spirit_level_calibrated.py</span>
+                    <pre><code>import machine
+import math
+import time
+from bmi270 import BMI270
+
+i2c = machine.I2C(1)
+imu = BMI270(i2c)
+
+def read_accel_angle():
+    x, y, z = imu.read_accel()
+    return math.degrees(math.atan2(x, z))
+
+# --- Calibration step ---
+print("Place the board on a known-flat surface, then press Enter.")
+input()
+
+samples = [read_accel_angle() for _ in range(20)]
+offset = sum(samples) / len(samples)
+print(f"Calibration offset: {offset:.2f} deg")
+
+# --- Main loop, now using the offset ---
+angle = read_accel_angle() - offset
+last_time = time.ticks_ms()
+GYRO_WEIGHT = 0.98
+
+while True:
+    x, y, z = imu.read_accel()
+    gx, gy, gz = imu.read_gyro()
+
+    now = time.ticks_ms()
+    dt = time.ticks_diff(now, last_time) / 1000
+    last_time = now
+
+    accel_angle = read_accel_angle() - offset
+    gyro_angle = angle + gy * dt
+    angle = GYRO_WEIGHT * gyro_angle + (1 - GYRO_WEIGHT) * accel_angle
+
+    print(f"{angle:+.1f} deg")
+    time.sleep(0.05)</code></pre>
+                </div>
+
+                <figure class="lab-figure" role="group" aria-labelledby="calibration-flow-diagram-png-caption">
+                    <img src="" data-suggested-filename="assets/images/calibration-flow-diagram.png"
+                         alt="Flowchart with three boxes: place board on flat surface, sample and average readings, subtract offset from all future readings, connected by arrows in sequence."
+                         width="700" height="420"
+                         loading="lazy">
+                    <figcaption id="calibration-flow-diagram-png-caption">Figure 2: The calibration flow — average several samples on a known-flat surface, then subtract that offset going forward.</figcaption>
+                </figure>
+            </section>
+
+            <section id="appendix" class="section" aria-labelledby="appendix-heading">
+                <h2 id="appendix-heading">Appendix — Quick Reference</h2>
+                <h3 id="fusion-formula">Complementary Filter Reference</h3>
+                <div class="code-block">
+                    <span class="code-caption">Formula</span>
+                    <pre><code>angle = W * (angle + gyro_rate * dt) + (1 - W) * accel_angle
+# W (gyro weight) is typically 0.90 - 0.98</code></pre>
+                </div>
+            </section>
+
+            <nav class="pager" aria-label="Lab navigation">
+                <a class="pager-prev" href="../lab08-sleep-tracker/index.html">
+                    <span class="pager-label">Previous lab</span>
+                    <span class="pager-title">Lab 8: Sleep Tracker</span>
+                </a>
+                <a class="pager-next" href="../lab10-gesture-remote/index.html">
+                    <span class="pager-label">Next lab</span>
+                    <span class="pager-title">Lab 10: Gesture Remote →</span>
+                </a>
+            </nav>
+        </main>
+
+        <aside class="toc" data-toc aria-label="On this page">
+            <details open>
+                <summary>On this page</summary>
+                <nav aria-label="Table of contents">
+                    <ul>
+                        <li><a href="#objectives">Learning Objectives</a></li>
+                        <li><a href="#two-flawed-methods">Part 1: Two Sensors, Two Flaws</a></li>
+                        <li><a href="#complementary-filter">Part 2: The Complementary Filter</a></li>
+                        <li><a href="#implementation">Part 3: Implementing the Digital Spirit Level</a></li>
+                        <li><a href="#calibration">Part 4: Calibrating "Level"</a></li>
+                        <li><a href="#appendix">Appendix — Quick Reference</a></li>
+                    </ul>
+                </nav>
+            </details>
+        </aside>
+    </div>
+
+    <footer class="site-footer" role="contentinfo">
+        <div class="footer-inner">
+            <p>Programming Fundamentals · The CE Lounge · Spring 2026</p>
+            <p class="bits" aria-hidden="true">0 1 1 0 · 1 0 0 1</p>
+        </div>
+    </footer>
+</body>
+</html>

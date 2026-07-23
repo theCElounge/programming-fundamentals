@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Lab 13: Morse Code Encoder · Programming Fundamentals</title>
+    <meta name="description" content="Encode typed messages into Morse code, blinking the onboard LED, using string slicing, dictionaries, and the APDS9960 as a touch-free trigger.">
+
+    <link rel="icon" type="image/png" href="../../assets/images/favicon-32.png" sizes="32x32">
+    <link rel="icon" type="image/png" href="../../assets/images/favicon-16.png" sizes="16x16">
+    <link rel="apple-touch-icon" href="../../assets/images/apple-touch-icon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="../../assets/css/site.css">
+    <link rel="stylesheet" href="../../assets/css/lab-common.css">
+    <link rel="stylesheet" href="lab-styles.css">
+
+    <script src="../../assets/js/site.js" defer></script>
+    <script src="../../assets/js/lab-common.js" defer></script>
+</head>
+<body>
+    <a class="skip-link" href="#main-content">Skip to main content</a>
+
+    <header class="site-header" role="banner">
+        <div class="header-inner">
+            <a class="brand" href="../../index.html" aria-label="Programming Fundamentals — Home">
+                <img class="brand-mark" src="../../assets/images/logo-mark-64.png" alt="" width="36" height="36">
+                <span>Programming Fundamentals<span class="brand-course">The CE Lounge · Lab Materials</span></span>
+            </a>
+            <nav class="site-nav" aria-label="Course">
+                <ul>
+                    <li><a href="../../index.html">All labs</a></li>
+                </ul>
+            </nav>
+            <button type="button" class="theme-toggle" aria-pressed="false" aria-label="Switch to dark theme">🌙<span class="theme-label">Dark</span></button>
+        </div>
+    </header>
+
+    <div class="hero">
+        <p class="eyebrow">
+            <span aria-hidden="true">Lab 013 / 014</span>
+            <span class="sr-only">Lab 13 of 14</span>
+        </p>
+        <h1>Lab <span class="accent">Morse Code Encoder</span></h1>
+        <hr class="trace-rule" aria-hidden="true">
+        <p class="lede">Turn text into blinking Morse code using string slicing and a dictionary lookup table, triggered touch-free with the APDS9960 proximity sensor.</p>
+    </div>
+
+    <div class="page-grid">
+        <main id="main-content" class="content">
+
+            <section id="objectives" class="section" aria-labelledby="objectives-heading">
+                <h2 id="objectives-heading">Learning Objectives</h2>
+                <p>By the end of this lab, you will be able to:</p>
+                <ol>
+                    <li>Use <strong>string slicing</strong> and iteration to process typed text character by character.</li>
+                    <li>Build a <strong>dictionary</strong> that maps letters to their Morse code patterns.</li>
+                    <li>Blink the onboard RGB LED to represent dots and dashes.</li>
+                    <li>Use the <strong>APDS9960</strong> as a touch-free proximity "button" to trigger sending.</li>
+                    <li>Combine everything into a working Morse code encoder.</li>
+                </ol>
+
+                <div class="example-card" role="note" aria-label="Lab information">
+                    <h3 id="lab-meta-heading">Lab Information</h3>
+                    <dl class="lab-meta-list">
+                        <dt>Hardware</dt>
+                        <dd>RGB LED + APDS9960 Proximity Sensor (onboard)</dd>
+                        <dt>Duration</dt>
+                        <dd>75–100 minutes</dd>
+                        <dt>Prerequisites</dt>
+                        <dd>Lab 12: Color Matcher</dd>
+                        <dt>Key Concepts</dt>
+                        <dd>String slicing, dictionaries</dd>
+                    </dl>
+                </div>
+            </section>
+
+            <section id="morse-dictionary" class="section" aria-labelledby="morse-dictionary-heading">
+                <h2 id="morse-dictionary-heading">Part 1: A Dictionary of Morse Code</h2>
+                <p>Morse code represents each letter as a sequence of dots (short signals) and dashes (long signals). This is a perfect fit for a Python <strong>dictionary</strong>: each letter (the key) maps to its Morse pattern (the value) — exactly the labeling idea from Lab 4, applied to letters instead of sensor readings.</p>
+
+                <div class="code-block">
+                    <span class="code-caption">Python — morse_table.py</span>
+                    <pre><code>MORSE_CODE = {
+    "A": ".-",    "B": "-...",  "C": "-.-.",  "D": "-..",   "E": ".",
+    "F": "..-.",  "G": "--.",   "H": "....",  "I": "..",    "J": ".---",
+    "K": "-.-",   "L": ".-..",  "M": "--",    "N": "-.",    "O": "---",
+    "P": ".--.",  "Q": "--.-",  "R": ".-.",   "S": "...",   "T": "-",
+    "U": "..-",   "V": "...-",  "W": ".--",   "X": "-..-",  "Y": "-.--",
+    "Z": "--..",
+    "0": "-----", "1": ".----", "2": "..---", "3": "...--", "4": "....-",
+    "5": ".....", "6": "-....", "7": "--...", "8": "---..", "9": "----.",
+}
+
+print(MORSE_CODE["S"])   # '...'
+print(MORSE_CODE["O"])   # '---'</code></pre>
+                </div>
+
+                <figure class="lab-figure" role="group" aria-labelledby="morse-code-chart-png-caption">
+                    <img src="" data-suggested-filename="assets/images/morse-code-chart.png"
+                         alt="Reference chart listing every letter A through Z and digit 0 through 9 alongside its Morse code pattern of dots and dashes."
+                         width="700" height="420"
+                         loading="lazy">
+                    <figcaption id="morse-code-chart-png-caption">Figure 1: The full Morse code alphabet used to build the dictionary.</figcaption>
+                </figure>
+            </section>
+
+            <section id="string-slicing" class="section" aria-labelledby="string-slicing-heading">
+                <h2 id="string-slicing-heading">Part 2: String Slicing — Processing Text Character by Character</h2>
+                <p>To encode a whole word, we need to process a string one character at a time and look each one up in <code>MORSE_CODE</code>. Python strings support <strong>indexing</strong> and <strong>slicing</strong>, which let you pull out individual characters or substrings.</p>
+
+                <div class="code-block">
+                    <span class="code-caption">Python — Shell</span>
+                    <pre><code>>>> word = "SOS"
+>>> word[0]
+'S'
+>>> word[1]
+'O'
+>>> word[0:2]
+'SO'
+>>> word[-1]
+'S'
+>>> word.upper()
+'SOS'
+>>> len(word)
+3</code></pre>
+                </div>
+
+                <p>The cleanest way to visit every character is a <code>for</code> loop directly over the string — Python lets you iterate over a string just like a list:</p>
+
+                <div class="code-block">
+                    <span class="code-caption">Python — encode_word.py</span>
+                    <pre><code>MORSE_CODE = { "S": "...", "O": "---" }  # shortened for this example
+
+word = "SOS"
+
+for letter in word:
+    pattern = MORSE_CODE[letter]
+    print(f"{letter} -> {pattern}")</code></pre>
+                </div>
+
+                <div class="instructions" role="note" aria-label="Handling unknown characters">
+                    <strong>💡 Handling the unexpected:</strong> What if someone types a character that isn't a letter or digit, like a space or punctuation mark? Use <code>dict.get(key, default)</code> instead of <code>dict[key]</code> to supply a fallback instead of crashing:
+                    <div class="code-block" style="margin-top: 0.75rem;">
+                        <span class="code-caption">Python</span>
+                        <pre><code>pattern = MORSE_CODE.get(letter.upper(), None)
+if pattern is None:
+    continue   # skip characters we don't know how to encode</code></pre>
+                    </div>
+                </div>
+            </section>
+
+            <section id="blinking-morse" class="section" aria-labelledby="blinking-morse-heading">
+                <h2 id="blinking-morse-heading">Part 3: Blinking the Pattern</h2>
+                <p>Now let's turn a Morse pattern string into actual LED flashes, reusing the <code>set_color()</code>-style PWM control from Lab 2.</p>
+
+                <div class="code-block">
+                    <span class="code-caption">Python — morse_led.py</span>
+                    <pre><code>import machine
+import time
+
+red_led = machine.PWM(machine.Pin(10))
+
+DOT_DURATION = 0.2     # seconds
+DASH_DURATION = 0.6
+GAP_BETWEEN_SYMBOLS = 0.2
+GAP_BETWEEN_LETTERS = 0.6
+
+def led_on():
+    red_led.duty_u16(0)       # Active-Low: 0 = on
+
+def led_off():
+    red_led.duty_u16(65535)   # Active-Low: 65535 = off
+
+def blink_pattern(pattern):
+    for symbol in pattern:
+        led_on()
+        if symbol == ".":
+            time.sleep(DOT_DURATION)
+        elif symbol == "-":
+            time.sleep(DASH_DURATION)
+        led_off()
+        time.sleep(GAP_BETWEEN_SYMBOLS)
+    time.sleep(GAP_BETWEEN_LETTERS - GAP_BETWEEN_SYMBOLS)
+
+blink_pattern("...")  # S
+blink_pattern("---")  # O
+blink_pattern("...")  # S</code></pre>
+                </div>
+
+                <p>Notice how the <code>for symbol in pattern</code> loop is iterating over a <em>string</em> (<code>"..."</code>) exactly the same way you'd iterate over a list — each character comes through one at a time.</p>
+            </section>
+
+            <section id="proximity-trigger" class="section" aria-labelledby="proximity-trigger-heading">
+                <h2 id="proximity-trigger-heading">Part 4: A Touch-Free "Send" Button</h2>
+                <p>Instead of a physical button, let's use the APDS9960's proximity sensor from Lab 11 as a touch-free trigger — wave your hand over the sensor to send a preset message.</p>
+
+                <div class="code-block">
+                    <span class="code-caption">Python — morse_encoder.py</span>
+                    <pre><code>import machine
+import time
+from apds9960 import APDS9960
+
+i2c = machine.I2C(1)
+proximity_sensor = APDS9960(i2c)
+red_led = machine.PWM(machine.Pin(10))
+
+MORSE_CODE = {
+    "A": ".-",   "B": "-...", "C": "-.-.", "D": "-..",  "E": ".",
+    "F": "..-.", "G": "--.",  "H": "....", "I": "..",   "J": ".---",
+    "K": "-.-",  "L": ".-..", "M": "--",   "N": "-.",   "O": "---",
+    "P": ".--.", "Q": "--.-", "R": ".-.",  "S": "...",  "T": "-",
+    "U": "..-",  "V": "...-", "W": ".--",  "X": "-..-", "Y": "-.--",
+    "Z": "--..",
+}
+
+MESSAGE = "SOS"
+PROXIMITY_THRESHOLD = 60
+
+def led_on():
+    red_led.duty_u16(0)
+
+def led_off():
+    red_led.duty_u16(65535)
+
+def blink_pattern(pattern):
+    for symbol in pattern:
+        led_on()
+        time.sleep(0.6 if symbol == "-" else 0.2)
+        led_off()
+        time.sleep(0.2)
+
+def send_message(message):
+    print(f"Sending: {message}")
+    for letter in message:
+        pattern = MORSE_CODE.get(letter.upper())
+        if pattern is None:
+            continue
+        blink_pattern(pattern)
+        time.sleep(0.4)  # extra gap between letters
+
+print("Wave your hand over the sensor to send:", MESSAGE)
+
+while True:
+    if proximity_sensor.proximity() > PROXIMITY_THRESHOLD:
+        send_message(MESSAGE)
+        time.sleep(1)  # avoid immediately re-triggering
+    time.sleep(0.05)</code></pre>
+                </div>
+
+                <figure class="lab-figure" role="group" aria-labelledby="morse-encoder-demo-photo-jpg-caption">
+                    <img src="" data-suggested-filename="assets/images/morse-encoder-demo-photo.jpg"
+                         alt="Photograph of a hand hovering above the Arduino NANO BLE Sense board with the onboard LED lit red, demonstrating the proximity-triggered Morse code sender."
+                         width="700" height="420"
+                         loading="lazy">
+                    <figcaption id="morse-encoder-demo-photo-jpg-caption">Figure 2: Waving a hand over the sensor triggers the LED to blink out the message.</figcaption>
+                </figure>
+            </section>
+
+            <section id="appendix" class="section" aria-labelledby="appendix-heading">
+                <h2 id="appendix-heading">Appendix — Quick Reference</h2>
+                <h3 id="string-methods">String Slicing &amp; Methods</h3>
+                <div class="table-responsive" role="region" aria-label="String slicing and methods">
+                    <table class="tt-table" summary="String slicing and method reference">
+                        <thead><tr><th scope="col">Expression</th><th scope="col">Meaning</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>s[0]</code></td><td>First character</td></tr>
+                            <tr><td><code>s[-1]</code></td><td>Last character</td></tr>
+                            <tr><td><code>s[1:4]</code></td><td>Characters from index 1 up to (not including) 4</td></tr>
+                            <tr><td><code>s.upper()</code></td><td>Uppercase copy of the string</td></tr>
+                            <tr><td><code>for c in s:</code></td><td>Loop over every character in <code>s</code></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h3 id="dict-get">dict.get() Reference</h3>
+                <div class="code-block">
+                    <span class="code-caption">Python</span>
+                    <pre><code>d.get(key)            # returns None if key is missing (no crash)
+d.get(key, "default")  # returns "default" if key is missing</code></pre>
+                </div>
+            </section>
+
+            <nav class="pager" aria-label="Lab navigation">
+                <a class="pager-prev" href="../lab12-color-matcher/index.html">
+                    <span class="pager-label">Previous lab</span>
+                    <span class="pager-title">Lab 12: Color Matcher</span>
+                </a>
+                <a class="pager-next" href="../lab14-anomaly-detector/index.html">
+                    <span class="pager-label">Next lab</span>
+                    <span class="pager-title">Lab 14: Anomaly Detector →</span>
+                </a>
+            </nav>
+        </main>
+
+        <aside class="toc" data-toc aria-label="On this page">
+            <details open>
+                <summary>On this page</summary>
+                <nav aria-label="Table of contents">
+                    <ul>
+                        <li><a href="#objectives">Learning Objectives</a></li>
+                        <li><a href="#morse-dictionary">Part 1: A Dictionary of Morse Code</a></li>
+                        <li><a href="#string-slicing">Part 2: String Slicing — Processing Text Character by Character</a></li>
+                        <li><a href="#blinking-morse">Part 3: Blinking the Pattern</a></li>
+                        <li><a href="#proximity-trigger">Part 4: A Touch-Free "Send" Button</a></li>
+                        <li><a href="#appendix">Appendix — Quick Reference</a></li>
+                    </ul>
+                </nav>
+            </details>
+        </aside>
+    </div>
+
+    <footer class="site-footer" role="contentinfo">
+        <div class="footer-inner">
+            <p>Programming Fundamentals · The CE Lounge · Spring 2026</p>
+            <p class="bits" aria-hidden="true">0 1 1 0 · 1 0 0 1</p>
+        </div>
+    </footer>
+</body>
+</html>

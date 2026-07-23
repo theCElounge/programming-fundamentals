@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Lab 5: The Virtual Level · Programming Fundamentals</title>
+    <meta name="description" content="Read acceleration from the BMI270 and use the math module to turn it into a live tilt (roll/pitch) readout.">
+
+    <link rel="icon" type="image/png" href="../../assets/images/favicon-32.png" sizes="32x32">
+    <link rel="icon" type="image/png" href="../../assets/images/favicon-16.png" sizes="16x16">
+    <link rel="apple-touch-icon" href="../../assets/images/apple-touch-icon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="../../assets/css/site.css">
+    <link rel="stylesheet" href="../../assets/css/lab-common.css">
+    <link rel="stylesheet" href="lab-styles.css">
+
+    <script src="../../assets/js/site.js" defer></script>
+    <script src="../../assets/js/lab-common.js" defer></script>
+</head>
+<body>
+    <a class="skip-link" href="#main-content">Skip to main content</a>
+
+    <header class="site-header" role="banner">
+        <div class="header-inner">
+            <a class="brand" href="../../index.html" aria-label="Programming Fundamentals — Home">
+                <img class="brand-mark" src="../../assets/images/logo-mark-64.png" alt="" width="36" height="36">
+                <span>Programming Fundamentals<span class="brand-course">The CE Lounge · Lab Materials</span></span>
+            </a>
+            <nav class="site-nav" aria-label="Course">
+                <ul>
+                    <li><a href="../../index.html">All labs</a></li>
+                </ul>
+            </nav>
+            <button type="button" class="theme-toggle" aria-pressed="false" aria-label="Switch to dark theme">🌙<span class="theme-label">Dark</span></button>
+        </div>
+    </header>
+
+    <div class="hero">
+        <p class="eyebrow">
+            <span aria-hidden="true">Lab 005 / 014</span>
+            <span class="sr-only">Lab 5 of 14</span>
+        </p>
+        <h1>Lab The <span class="accent">Virtual Level</span></h1>
+        <hr class="trace-rule" aria-hidden="true">
+        <p class="lede">Read 3-axis accelerometer data from the BMI270, use the math module to calculate real angles, and build a live bubble-level readout.</p>
+    </div>
+
+    <div class="page-grid">
+        <main id="main-content" class="content">
+
+            <section id="objectives" class="section" aria-labelledby="objectives-heading">
+                <h2 id="objectives-heading">Learning Objectives</h2>
+                <p>By the end of this lab, you will be able to:</p>
+                <ol>
+                    <li>Read 3-axis acceleration data from the onboard <strong>BMI270</strong> sensor.</li>
+                    <li>Use Python's <strong>math module</strong> to compute angles from raw acceleration.</li>
+                    <li>Understand how gravity on each axis reveals the board's <strong>tilt</strong>.</li>
+                    <li>Map raw sensor values onto a simple <strong>coordinate system</strong>.</li>
+                    <li>Build a live "bubble level" readout in the shell.</li>
+                </ol>
+
+                <div class="example-card" role="note" aria-label="Lab information">
+                    <h3 id="lab-meta-heading">Lab Information</h3>
+                    <dl class="lab-meta-list">
+                        <dt>Hardware</dt>
+                        <dd>BMI270 6-Axis IMU — Accelerometer (onboard, I2C)</dd>
+                        <dt>Duration</dt>
+                        <dd>75–100 minutes</dd>
+                        <dt>Prerequisites</dt>
+                        <dd>Lab 4: Data Logger</dd>
+                        <dt>Key Concepts</dt>
+                        <dd>math module, coordinate systems, trigonometry</dd>
+                    </dl>
+                </div>
+            </section>
+
+            <section id="meet-bmi270" class="section" aria-labelledby="meet-bmi270-heading">
+                <h2 id="meet-bmi270-heading">Part 1: Meet the BMI270</h2>
+                <p>The <strong>BMI270</strong> is a 6-axis <strong>Inertial Measurement Unit (IMU)</strong> — it combines an accelerometer (which senses acceleration, including gravity) and a gyroscope (which senses rotation speed) in one chip. This lab uses only the accelerometer half; you'll meet the gyroscope starting in Lab 8.</p>
+
+                <figure class="lab-figure" role="group" aria-labelledby="bmi270-sensor-location-jpg-caption">
+                    <img src="" data-suggested-filename="assets/images/bmi270-sensor-location.jpg"
+                         alt="Top-down photograph of the Arduino NANO BLE Sense Rev2 with an arrow pointing to the BMI270 IMU package near the center of the board."
+                         width="700" height="420"
+                         loading="lazy">
+                    <figcaption id="bmi270-sensor-location-jpg-caption">Figure 1: The onboard BMI270 6-axis IMU.</figcaption>
+                </figure>
+
+                <div class="instructions" role="note" aria-label="Driver reminder">
+                    <strong>💡 Sensor driver:</strong> Copy the course-provided <code>bmi270.py</code> driver onto your board with Thonny (same process as Labs 3 and 4). You'll reuse this same driver through Lab 9.
+                </div>
+
+                <div class="code-block">
+                    <span class="code-caption">Python — accel_test.py</span>
+                    <pre><code>import machine
+from bmi270 import BMI270
+
+i2c = machine.I2C(1)
+imu = BMI270(i2c)
+
+# .read_accel() returns a tuple of 3 floats, in units of g (9.8 m/s^2)
+x, y, z = imu.read_accel()
+print(f"x={x:.2f} g   y={y:.2f} g   z={z:.2f} g")</code></pre>
+                </div>
+
+                <p>Lay the board flat on the table and run this. You should see roughly <code>x=0.00, y=0.00, z=1.00</code> — gravity is pulling straight down the board's Z axis.</p>
+            </section>
+
+            <section id="gravity-tilt" class="section" aria-labelledby="gravity-tilt-heading">
+                <h2 id="gravity-tilt-heading">Part 2: How Gravity Reveals Tilt</h2>
+                <p>The accelerometer can't directly measure "tilt" — it measures <strong>acceleration along three axes</strong>. But because gravity always pulls straight down at 1&nbsp;g, the way that 1&nbsp;g splits across the X, Y, and Z axes tells us exactly how the board is oriented.</p>
+
+                <figure class="lab-figure" role="group" aria-labelledby="accelerometer-axes-diagram-png-caption">
+                    <img src="" data-suggested-filename="assets/images/accelerometer-axes-diagram.png"
+                         alt="3D diagram of the Arduino NANO BLE Sense board with X, Y, and Z axis arrows labeled, and a downward-pointing gravity vector shown splitting into components along each axis when the board is tilted."
+                         width="700" height="420"
+                         loading="lazy">
+                    <figcaption id="accelerometer-axes-diagram-png-caption">Figure 2: When the board tilts, gravity's pull splits across the X, Y, and Z axes.</figcaption>
+                </figure>
+
+                <p>Try tilting the board while it's running the loop below and watch the numbers change:</p>
+
+                <div class="code-block">
+                    <span class="code-caption">Python — watch_tilt.py</span>
+                    <pre><code>import machine
+import time
+from bmi270 import BMI270
+
+i2c = machine.I2C(1)
+imu = BMI270(i2c)
+
+while True:
+    x, y, z = imu.read_accel()
+    print(f"x={x:+.2f}  y={y:+.2f}  z={z:+.2f}")
+    time.sleep(0.2)</code></pre>
+                </div>
+
+                <p>Flat on the table: <code>z</code> is near <code>+1.00</code>, <code>x</code> and <code>y</code> are near <code>0.00</code>. Tilt the board's left edge up: <code>x</code> becomes negative. Tilt the right edge up: <code>x</code> becomes positive. Tilting front/back does the same to <code>y</code>.</p>
+            </section>
+
+            <section id="math-module" class="section" aria-labelledby="math-module-heading">
+                <h2 id="math-module-heading">Part 3: The Math Module — Turning Gravity into Degrees</h2>
+                <p>Raw g-values like <code>0.34</code> aren't intuitive. What we really want is an <strong>angle</strong>, in degrees. That's where the <strong>math module</strong> comes in — specifically the <code>atan2()</code> function, which converts two axis readings into an angle.</p>
+
+                <div class="code-block">
+                    <span class="code-caption">Python — Shell</span>
+                    <pre><code>>>> import math
+>>> math.pi
+3.141592653589793
+>>> math.sqrt(16)
+4.0
+>>> math.atan2(1, 1)      # radians
+0.7853981633974483
+>>> math.degrees(math.atan2(1, 1))
+45.0</code></pre>
+                </div>
+
+                <div class="instructions" role="note" aria-label="Radians vs degrees">
+                    <strong>💡 Radians vs. degrees:</strong> Python's trig functions work in <strong>radians</strong>, not degrees. Always wrap the result in <code>math.degrees()</code> to get a number you can read naturally.
+                </div>
+
+                <p>To find the board's <strong>roll</strong> (tilt left/right) and <strong>pitch</strong> (tilt front/back), we compare each horizontal axis against gravity's vertical (Z) component:</p>
+
+                <div class="code-block">
+                    <span class="code-caption">Python — virtual_level.py</span>
+                    <pre><code>import machine
+import math
+import time
+from bmi270 import BMI270
+
+i2c = machine.I2C(1)
+imu = BMI270(i2c)
+
+while True:
+    x, y, z = imu.read_accel()
+
+    roll = math.degrees(math.atan2(x, z))
+    pitch = math.degrees(math.atan2(y, z))
+
+    print(f"Roll: {roll:+6.1f} deg   Pitch: {pitch:+6.1f} deg")
+    time.sleep(0.2)</code></pre>
+                </div>
+
+                <p>Lay the board flat: both readings should hover near <code>0.0</code>. Prop up one edge about 45 degrees and watch the corresponding value approach <code>45.0</code>.</p>
+            </section>
+
+            <section id="text-bubble" class="section" aria-labelledby="text-bubble-heading">
+                <h2 id="text-bubble-heading">Part 4: A Text-Based Bubble Level</h2>
+                <p>Let's turn the roll angle into a visual indicator, the same way a real bubble level shows a bubble drifting off-center.</p>
+
+                <div class="code-block">
+                    <span class="code-caption">Python — bubble_level.py</span>
+                    <pre><code>import machine
+import math
+import time
+from bmi270 import BMI270
+
+i2c = machine.I2C(1)
+imu = BMI270(i2c)
+
+WIDTH = 21  # characters wide, must be odd so there's a true center
+
+while True:
+    x, y, z = imu.read_accel()
+    roll = math.degrees(math.atan2(x, z))
+
+    # Map roll (-45..+45 degrees) onto a bubble position (0..WIDTH-1)
+    clamped = max(-45, min(45, roll))
+    position = int((clamped + 45) / 90 * (WIDTH - 1))
+
+    track = ["-"] * WIDTH
+    track[WIDTH // 2] = "|"      # center mark
+    track[position] = "O"        # the "bubble"
+
+    print("".join(track) + f"   roll={roll:+.1f} deg")
+    time.sleep(0.15)</code></pre>
+                </div>
+
+                <figure class="lab-figure" role="group" aria-labelledby="bubble-level-shell-output-png-caption">
+                    <img src="" data-suggested-filename="assets/images/bubble-level-shell-output.png"
+                         alt="Screenshot of the Thonny shell showing a text-based bubble level, a row of dashes with a center pipe character and an O character representing the bubble position, next to the numeric roll angle."
+                         width="700" height="420"
+                         loading="lazy">
+                    <figcaption id="bubble-level-shell-output-png-caption">Figure 3: The bubble drifts left or right as the board tilts, just like a real level.</figcaption>
+                </figure>
+            </section>
+
+            <section id="appendix" class="section" aria-labelledby="appendix-heading">
+                <h2 id="appendix-heading">Appendix — Quick Reference</h2>
+                <h3 id="bmi270-api">BMI270 Driver Reference (Accelerometer)</h3>
+                <div class="table-responsive" role="region" aria-label="BMI270 accelerometer methods">
+                    <table class="tt-table" summary="Accelerometer methods on the BMI270 driver object">
+                        <thead><tr><th scope="col">Method</th><th scope="col">Returns</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>BMI270(i2c)</code></td><td>Creates an IMU object on the given I2C bus.</td></tr>
+                            <tr><td><code>imu.read_accel()</code></td><td>Tuple <code>(x, y, z)</code> in units of g.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h3 id="math-functions">Useful Math Module Functions</h3>
+                <div class="table-responsive" role="region" aria-label="Math module functions">
+                    <table class="tt-table" summary="Commonly used functions from the math module">
+                        <thead><tr><th scope="col">Function</th><th scope="col">What it does</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>math.sqrt(x)</code></td><td>Square root of <code>x</code>.</td></tr>
+                            <tr><td><code>math.atan2(y, x)</code></td><td>Angle (radians) of the point <code>(x, y)</code> from the origin.</td></tr>
+                            <tr><td><code>math.degrees(r)</code></td><td>Converts radians <code>r</code> to degrees.</td></tr>
+                            <tr><td><code>math.radians(d)</code></td><td>Converts degrees <code>d</code> to radians.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <nav class="pager" aria-label="Lab navigation">
+                <a class="pager-prev" href="../lab04-data-logger/index.html">
+                    <span class="pager-label">Previous lab</span>
+                    <span class="pager-title">Lab 4: Data Logger</span>
+                </a>
+                <a class="pager-next" href="../lab06-pedometer-logic/index.html">
+                    <span class="pager-label">Next lab</span>
+                    <span class="pager-title">Lab 6: Pedometer Logic →</span>
+                </a>
+            </nav>
+        </main>
+
+        <aside class="toc" data-toc aria-label="On this page">
+            <details open>
+                <summary>On this page</summary>
+                <nav aria-label="Table of contents">
+                    <ul>
+                        <li><a href="#objectives">Learning Objectives</a></li>
+                        <li><a href="#meet-bmi270">Part 1: Meet the BMI270</a></li>
+                        <li><a href="#gravity-tilt">Part 2: How Gravity Reveals Tilt</a></li>
+                        <li><a href="#math-module">Part 3: The Math Module — Turning Gravity into Degrees</a></li>
+                        <li><a href="#text-bubble">Part 4: A Text-Based Bubble Level</a></li>
+                        <li><a href="#appendix">Appendix — Quick Reference</a></li>
+                    </ul>
+                </nav>
+            </details>
+        </aside>
+    </div>
+
+    <footer class="site-footer" role="contentinfo">
+        <div class="footer-inner">
+            <p>Programming Fundamentals · The CE Lounge · Spring 2026</p>
+            <p class="bits" aria-hidden="true">0 1 1 0 · 1 0 0 1</p>
+        </div>
+    </footer>
+</body>
+</html>

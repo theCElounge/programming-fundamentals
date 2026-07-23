@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Lab 8: Sleep Tracker · Programming Fundamentals</title>
+    <meta name="description" content="Log overnight movement events from the BMI270 gyroscope using the time module and summarize sleep quality.">
+
+    <link rel="icon" type="image/png" href="../../assets/images/favicon-32.png" sizes="32x32">
+    <link rel="icon" type="image/png" href="../../assets/images/favicon-16.png" sizes="16x16">
+    <link rel="apple-touch-icon" href="../../assets/images/apple-touch-icon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="../../assets/css/site.css">
+    <link rel="stylesheet" href="../../assets/css/lab-common.css">
+    <link rel="stylesheet" href="lab-styles.css">
+
+    <script src="../../assets/js/site.js" defer></script>
+    <script src="../../assets/js/lab-common.js" defer></script>
+</head>
+<body>
+    <a class="skip-link" href="#main-content">Skip to main content</a>
+
+    <header class="site-header" role="banner">
+        <div class="header-inner">
+            <a class="brand" href="../../index.html" aria-label="Programming Fundamentals — Home">
+                <img class="brand-mark" src="../../assets/images/logo-mark-64.png" alt="" width="36" height="36">
+                <span>Programming Fundamentals<span class="brand-course">The CE Lounge · Lab Materials</span></span>
+            </a>
+            <nav class="site-nav" aria-label="Course">
+                <ul>
+                    <li><a href="../../index.html">All labs</a></li>
+                </ul>
+            </nav>
+            <button type="button" class="theme-toggle" aria-pressed="false" aria-label="Switch to dark theme">🌙<span class="theme-label">Dark</span></button>
+        </div>
+    </header>
+
+    <div class="hero">
+        <p class="eyebrow">
+            <span aria-hidden="true">Lab 008 / 014</span>
+            <span class="sr-only">Lab 8 of 14</span>
+        </p>
+        <h1>Lab <span class="accent">Sleep Tracker</span></h1>
+        <hr class="trace-rule" aria-hidden="true">
+        <p class="lede">Read rotational motion from the BMI270 gyroscope, use the time module to timestamp movement events, and summarize a session into a sleep-quality estimate.</p>
+    </div>
+
+    <div class="page-grid">
+        <main id="main-content" class="content">
+
+            <section id="objectives" class="section" aria-labelledby="objectives-heading">
+                <h2 id="objectives-heading">Learning Objectives</h2>
+                <p>By the end of this lab, you will be able to:</p>
+                <ol>
+                    <li>Read rotational motion from the onboard <strong>BMI270 gyroscope</strong>.</li>
+                    <li>Use the <strong>time module</strong> to timestamp events over a long-running session.</li>
+                    <li>Build an <strong>event log</strong> that records movement rather than every single reading.</li>
+                    <li>Summarize a session into a simple sleep-quality estimate.</li>
+                    <li>Practice <strong>relative timestamps</strong> versus absolute clock time.</li>
+                </ol>
+
+                <div class="example-card" role="note" aria-label="Lab information">
+                    <h3 id="lab-meta-heading">Lab Information</h3>
+                    <dl class="lab-meta-list">
+                        <dt>Hardware</dt>
+                        <dd>BMI270 6-Axis IMU — Gyroscope (onboard, I2C)</dd>
+                        <dt>Duration</dt>
+                        <dd>60–90 minutes</dd>
+                        <dt>Prerequisites</dt>
+                        <dd>Lab 7: Fall Detector</dd>
+                        <dt>Key Concepts</dt>
+                        <dd>Time module, event logging</dd>
+                    </dl>
+                </div>
+            </section>
+
+            <section id="meet-gyroscope" class="section" aria-labelledby="meet-gyroscope-heading">
+                <h2 id="meet-gyroscope-heading">Part 1: Meet the Gyroscope</h2>
+                <p>So far, you've used the BMI270's <strong>accelerometer</strong> half. Its other half is a <strong>gyroscope</strong>, which measures <strong>rotational speed</strong> — how fast the board is spinning around each axis, in degrees per second (°/s). Unlike the accelerometer, the gyroscope reads near zero whenever the board is <em>still</em>, no matter its orientation, which makes it a great motion detector for something like overnight movement tracking.</p>
+
+                <div class="code-block">
+                    <span class="code-caption">Python — gyro_test.py</span>
+                    <pre><code>import machine
+from bmi270 import BMI270
+
+i2c = machine.I2C(1)
+imu = BMI270(i2c)
+
+# .read_gyro() returns (x, y, z) in degrees per second
+gx, gy, gz = imu.read_gyro()
+print(f"gx={gx:.1f} gy={gy:.1f} gz={gz:.1f} (deg/s)")</code></pre>
+                </div>
+
+                <p>Leave the board still: all three values should hover near <code>0.0</code>. Rotate it slowly in your hand and watch the relevant axis climb.</p>
+
+                <figure class="lab-figure" role="group" aria-labelledby="gyroscope-rotation-axes-png-caption">
+                    <img src="" data-suggested-filename="assets/images/gyroscope-rotation-axes.png"
+                         alt="3D diagram of the Arduino NANO BLE Sense board showing curved rotation arrows around the X, Y, and Z axes, each labeled with degrees per second."
+                         width="700" height="420"
+                         loading="lazy">
+                    <figcaption id="gyroscope-rotation-axes-png-caption">Figure 1: The gyroscope measures rotation speed around each of the three axes.</figcaption>
+                </figure>
+            </section>
+
+            <section id="time-module" class="section" aria-labelledby="time-module-heading">
+                <h2 id="time-module-heading">Part 2: The Time Module for Long-Running Sessions</h2>
+                <p>You've used <code>time.sleep()</code> since Lab 1, but tracking sleep needs more: we need to know <em>when</em> each movement happened relative to when the session started. MicroPython's <code>time</code> module gives us a running millisecond counter for exactly this purpose.</p>
+
+                <div class="table-responsive" role="region" aria-label="Time module functions">
+                    <table class="tt-table" summary="Time module functions relevant to event logging">
+                        <thead><tr><th scope="col">Function</th><th scope="col">What it does</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>time.ticks_ms()</code></td><td>Milliseconds since the board booted (wraps around eventually — always use <code>ticks_diff</code> to compare).</td></tr>
+                            <tr><td><code>time.ticks_diff(new, old)</code></td><td>Safely computes elapsed milliseconds between two <code>ticks_ms()</code> readings.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="code-block">
+                    <span class="code-caption">Python — Shell</span>
+                    <pre><code>>>> import time
+>>> start = time.ticks_ms()
+>>> time.sleep(2)
+>>> elapsed_ms = time.ticks_diff(time.ticks_ms(), start)
+>>> elapsed_ms
+2003
+>>> elapsed_minutes = elapsed_ms / 1000 / 60
+>>> round(elapsed_minutes, 2)
+0.03</code></pre>
+                </div>
+
+                <div class="instructions" role="note" aria-label="Why not use a real clock">
+                    <strong>💡 Why not a real clock?</strong> Most MicroPython boards don't keep accurate wall-clock time without extra setup (like syncing over the network). For this lab, we track time <em>relative to when the session starts</em>, which is all a sleep tracker actually needs.
+                </div>
+            </section>
+
+            <section id="event-logging" class="section" aria-labelledby="event-logging-heading">
+                <h2 id="event-logging-heading">Part 3: Logging Movement Events, Not Every Reading</h2>
+                <p>If we logged every single gyroscope reading all night, the file would be enormous and mostly useless (a sleeping person is still nearly all the time). Instead, we only log an <strong>event</strong> when the rotational speed crosses a threshold — the same thresholding idea from Labs 6 and 7, applied to a new sensor.</p>
+
+                <div class="code-block">
+                    <span class="code-caption">Python — sleep_tracker.py</span>
+                    <pre><code>import machine
+import math
+import time
+from bmi270 import BMI270
+
+i2c = machine.I2C(1)
+imu = BMI270(i2c)
+
+MOVEMENT_THRESHOLD = 15.0   # deg/s -- tune based on testing
+SESSION_MINUTES = 1          # shortened for in-class testing; use 480 (8 hrs) for a real run
+
+session_start = time.ticks_ms()
+movement_events = []
+
+print(f"Sleep tracking started for {SESSION_MINUTES} minute(s)...")
+
+while True:
+    elapsed_ms = time.ticks_diff(time.ticks_ms(), session_start)
+    elapsed_minutes = elapsed_ms / 1000 / 60
+
+    if elapsed_minutes >= SESSION_MINUTES:
+        break
+
+    gx, gy, gz = imu.read_gyro()
+    rotation_speed = math.sqrt(gx**2 + gy**2 + gz**2)
+
+    if rotation_speed > MOVEMENT_THRESHOLD:
+        event = {
+            "minute": round(elapsed_minutes, 2),
+            "rotation_speed": round(rotation_speed, 1),
+        }
+        movement_events.append(event)
+        print(f"Movement at minute {event['minute']}: {event['rotation_speed']} deg/s")
+
+    time.sleep(0.2)
+
+print(f"Session complete. {len(movement_events)} movement events logged.")</code></pre>
+                </div>
+
+                <figure class="lab-figure" role="group" aria-labelledby="sleep-session-timeline-png-caption">
+                    <img src="" data-suggested-filename="assets/images/sleep-session-timeline.png"
+                         alt="Horizontal timeline diagram spanning eight hours with a handful of short vertical tick marks scattered along it representing individual movement events, most of the timeline empty representing still sleep."
+                         width="700" height="420"
+                         loading="lazy">
+                    <figcaption id="sleep-session-timeline-png-caption">Figure 2: A night's worth of movement events plotted along a timeline — mostly still, with occasional spikes.</figcaption>
+                </figure>
+            </section>
+
+            <section id="sleep-summary" class="section" aria-labelledby="sleep-summary-heading">
+                <h2 id="sleep-summary-heading">Part 4: Summarizing the Session</h2>
+                <p>Raw event logs are hard to interpret at a glance. Let's write a summary that turns the list of events into a simple, human-readable estimate.</p>
+
+                <div class="code-block">
+                    <span class="code-caption">Python — sleep_summary.py</span>
+                    <pre><code>def summarize(movement_events, session_minutes):
+    event_count = len(movement_events)
+
+    if event_count == 0:
+        return "No movement detected -- excellent, restful session."
+    elif event_count <= 3:
+        return f"Light movement -- {event_count} events. Good quality sleep."
+    elif event_count <= 8:
+        return f"Moderate movement -- {event_count} events. Fairly restless."
+    else:
+        return f"Frequent movement -- {event_count} events. Poor quality sleep."
+
+print(summarize(movement_events, SESSION_MINUTES))
+
+# Also write the full log to a file, as in Lab 4
+with open("sleep_log.csv", "w") as log_file:
+    log_file.write("minute,rotation_speed_deg_per_s\n")
+    for event in movement_events:
+        log_file.write(f"{event['minute']},{event['rotation_speed']}\n")
+
+print("Full event log saved to sleep_log.csv")</code></pre>
+                </div>
+
+                <div class="instructions" role="note" aria-label="Design choice">
+                    <strong>💡 Design choice:</strong> The exact cutoffs in <code>summarize()</code> (3 events, 8 events) are a judgment call, not a scientific formula. Real sleep trackers use much more sophisticated models — this is a simplified version to practice the underlying programming ideas: thresholding, event logging, and summarizing data.
+                </div>
+            </section>
+
+            <section id="appendix" class="section" aria-labelledby="appendix-heading">
+                <h2 id="appendix-heading">Appendix — Quick Reference</h2>
+                <h3 id="bmi270-gyro-api">BMI270 Driver Reference (Gyroscope)</h3>
+                <div class="table-responsive" role="region" aria-label="BMI270 gyroscope methods">
+                    <table class="tt-table" summary="Gyroscope methods on the BMI270 driver object">
+                        <thead><tr><th scope="col">Method</th><th scope="col">Returns</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>imu.read_gyro()</code></td><td>Tuple <code>(x, y, z)</code> in degrees per second.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <nav class="pager" aria-label="Lab navigation">
+                <a class="pager-prev" href="../lab07-fall-detector/index.html">
+                    <span class="pager-label">Previous lab</span>
+                    <span class="pager-title">Lab 7: Fall Detector</span>
+                </a>
+                <a class="pager-next" href="../lab09-spirit-level/index.html">
+                    <span class="pager-label">Next lab</span>
+                    <span class="pager-title">Lab 9: Digital Spirit Level →</span>
+                </a>
+            </nav>
+        </main>
+
+        <aside class="toc" data-toc aria-label="On this page">
+            <details open>
+                <summary>On this page</summary>
+                <nav aria-label="Table of contents">
+                    <ul>
+                        <li><a href="#objectives">Learning Objectives</a></li>
+                        <li><a href="#meet-gyroscope">Part 1: Meet the Gyroscope</a></li>
+                        <li><a href="#time-module">Part 2: The Time Module for Long-Running Sessions</a></li>
+                        <li><a href="#event-logging">Part 3: Logging Movement Events, Not Every Reading</a></li>
+                        <li><a href="#sleep-summary">Part 4: Summarizing the Session</a></li>
+                        <li><a href="#appendix">Appendix — Quick Reference</a></li>
+                    </ul>
+                </nav>
+            </details>
+        </aside>
+    </div>
+
+    <footer class="site-footer" role="contentinfo">
+        <div class="footer-inner">
+            <p>Programming Fundamentals · The CE Lounge · Spring 2026</p>
+            <p class="bits" aria-hidden="true">0 1 1 0 · 1 0 0 1</p>
+        </div>
+    </footer>
+</body>
+</html>

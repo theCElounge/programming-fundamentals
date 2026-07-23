@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Lab 4: Data Logger · Programming Fundamentals</title>
+    <meta name="description" content="Log barometric pressure readings from the LPS22HB sensor to a file using lists, dictionaries, and Python file I/O.">
+
+    <link rel="icon" type="image/png" href="../../assets/images/favicon-32.png" sizes="32x32">
+    <link rel="icon" type="image/png" href="../../assets/images/favicon-16.png" sizes="16x16">
+    <link rel="apple-touch-icon" href="../../assets/images/apple-touch-icon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="../../assets/css/site.css">
+    <link rel="stylesheet" href="../../assets/css/lab-common.css">
+    <link rel="stylesheet" href="lab-styles.css">
+
+    <script src="../../assets/js/site.js" defer></script>
+    <script src="../../assets/js/lab-common.js" defer></script>
+</head>
+<body>
+    <a class="skip-link" href="#main-content">Skip to main content</a>
+
+    <header class="site-header" role="banner">
+        <div class="header-inner">
+            <a class="brand" href="../../index.html" aria-label="Programming Fundamentals — Home">
+                <img class="brand-mark" src="../../assets/images/logo-mark-64.png" alt="" width="36" height="36">
+                <span>Programming Fundamentals<span class="brand-course">The CE Lounge · Lab Materials</span></span>
+            </a>
+            <nav class="site-nav" aria-label="Course">
+                <ul>
+                    <li><a href="../../index.html">All labs</a></li>
+                </ul>
+            </nav>
+            <button type="button" class="theme-toggle" aria-pressed="false" aria-label="Switch to dark theme">🌙<span class="theme-label">Dark</span></button>
+        </div>
+    </header>
+
+    <div class="hero">
+        <p class="eyebrow">
+            <span aria-hidden="true">Lab 004 / 014</span>
+            <span class="sr-only">Lab 4 of 14</span>
+        </p>
+        <h1>Lab <span class="accent">Data Logger</span></h1>
+        <hr class="trace-rule" aria-hidden="true">
+        <p class="lede">Read the onboard LPS22HB barometer, organize readings with lists and dictionaries, and write a permanent log file to the board's flash storage.</p>
+    </div>
+
+    <div class="page-grid">
+        <main id="main-content" class="content">
+
+            <section id="objectives" class="section" aria-labelledby="objectives-heading">
+                <h2 id="objectives-heading">Learning Objectives</h2>
+                <p>By the end of this lab, you will be able to:</p>
+                <ol>
+                    <li>Read barometric pressure and temperature from the onboard <strong>LPS22HB</strong> sensor.</li>
+                    <li>Store a series of readings using a Python <strong>list</strong>.</li>
+                    <li>Label each reading with a <strong>dictionary</strong>.</li>
+                    <li>Write sensor data to a <strong>file</strong> on the board's flash storage.</li>
+                    <li>Read the log file back and print its contents.</li>
+                </ol>
+
+                <div class="example-card" role="note" aria-label="Lab information">
+                    <h3 id="lab-meta-heading">Lab Information</h3>
+                    <dl class="lab-meta-list">
+                        <dt>Hardware</dt>
+                        <dd>LPS22HB Barometric Pressure Sensor (onboard, I2C)</dd>
+                        <dt>Duration</dt>
+                        <dd>60–90 minutes</dd>
+                        <dt>Prerequisites</dt>
+                        <dd>Lab 3: Weather Reporter</dd>
+                        <dt>Key Concepts</dt>
+                        <dd>Lists, dictionaries, file writing</dd>
+                    </dl>
+                </div>
+            </section>
+
+            <section id="meet-lps22hb" class="section" aria-labelledby="meet-lps22hb-heading">
+                <h2 id="meet-lps22hb-heading">Part 1: Meet the LPS22HB Sensor</h2>
+                <p>The <strong>LPS22HB</strong> is the onboard barometer — it measures atmospheric <strong>pressure</strong> (in hectopascals, hPa) and also reports its own internal temperature. Pressure changes with weather and with altitude, which makes this sensor useful for both weather stations and simple altimeters.</p>
+
+                <figure class="lab-figure" role="group" aria-labelledby="lps22hb-sensor-location-jpg-caption">
+                    <img src="" data-suggested-filename="assets/images/lps22hb-sensor-location.jpg"
+                         alt="Top-down photograph of the Arduino NANO BLE Sense Rev2 with an arrow pointing to the LPS22HB barometric sensor package."
+                         width="700" height="420"
+                         loading="lazy">
+                    <figcaption id="lps22hb-sensor-location-jpg-caption">Figure 1: The onboard LPS22HB barometric pressure sensor.</figcaption>
+                </figure>
+
+                <div class="instructions" role="note" aria-label="Driver reminder">
+                    <strong>💡 Sensor driver:</strong> As in Lab 3, copy the course-provided <code>lps22hb.py</code> driver onto your board with Thonny's <span class="ui-path">File &gt; Save As &gt; MicroPython device</span> before starting.
+                </div>
+
+                <div class="code-block">
+                    <span class="code-caption">Python — pressure_test.py</span>
+                    <pre><code>import machine
+from lps22hb import LPS22HB
+
+i2c = machine.I2C(1)
+barometer = LPS22HB(i2c)
+
+pressure_hpa = barometer.read_pressure_hpa()
+temperature_c = barometer.read_temperature_c()
+
+print("Pressure (hPa):", pressure_hpa)
+print("Temperature (C):", temperature_c)</code></pre>
+                </div>
+            </section>
+
+            <section id="lists" class="section" aria-labelledby="lists-heading">
+                <h2 id="lists-heading">Part 2: Storing Readings in a List</h2>
+                <p>A single reading isn't a <em>log</em> — a log is a history of readings over time. Python's <strong>list</strong> is the tool for that: an ordered, growable collection of values.</p>
+
+                <div class="code-block">
+                    <span class="code-caption">Python — Shell</span>
+                    <pre><code>>>> readings = []
+>>> readings.append(1013.2)
+>>> readings.append(1013.5)
+>>> readings.append(1012.9)
+>>> readings
+[1013.2, 1013.5, 1012.9]
+>>> len(readings)
+3
+>>> readings[0]
+1013.2
+>>> readings[-1]
+1012.9</code></pre>
+                </div>
+
+                <p>Let's collect ten readings, one every two seconds, into a list:</p>
+
+                <div class="code-block">
+                    <span class="code-caption">Python — collect_readings.py</span>
+                    <pre><code>import machine
+import time
+from lps22hb import LPS22HB
+
+i2c = machine.I2C(1)
+barometer = LPS22HB(i2c)
+
+readings = []
+
+for i in range(10):
+    pressure = barometer.read_pressure_hpa()
+    readings.append(pressure)
+    print(f"Reading {i + 1}: {pressure:.1f} hPa")
+    time.sleep(2)
+
+print("All readings:", readings)
+print("Average:", sum(readings) / len(readings))
+print("Minimum:", min(readings))
+print("Maximum:", max(readings))</code></pre>
+                </div>
+
+                <div class="instructions" role="note" aria-label="Built-in helpers">
+                    <strong>💡 Handy built-ins:</strong> <code>sum()</code>, <code>len()</code>, <code>min()</code>, and <code>max()</code> all work directly on lists of numbers — no loop required.
+                </div>
+            </section>
+
+            <section id="dictionaries" class="section" aria-labelledby="dictionaries-heading">
+                <h2 id="dictionaries-heading">Part 3: Labeling Data with Dictionaries</h2>
+                <p>A plain list of numbers loses context — what time was each reading taken? A <strong>dictionary</strong> lets us attach labels (<strong>keys</strong>) to values, so each reading can carry its own metadata.</p>
+
+                <div class="code-block">
+                    <span class="code-caption">Python — Shell</span>
+                    <pre><code>>>> reading = {"pressure_hpa": 1013.2, "temperature_c": 21.6, "sample": 1}
+>>> reading["pressure_hpa"]
+1013.2
+>>> reading["sample"]
+1
+>>> reading.keys()
+dict_keys(['pressure_hpa', 'temperature_c', 'sample'])</code></pre>
+                </div>
+
+                <p>Now let's combine lists and dictionaries: a <strong>list of dictionaries</strong>, where each dictionary is one labeled reading.</p>
+
+                <div class="code-block">
+                    <span class="code-caption">Python — labeled_log.py</span>
+                    <pre><code>import machine
+import time
+from lps22hb import LPS22HB
+
+i2c = machine.I2C(1)
+barometer = LPS22HB(i2c)
+
+log = []
+
+for i in range(5):
+    entry = {
+        "sample": i + 1,
+        "pressure_hpa": barometer.read_pressure_hpa(),
+        "temperature_c": barometer.read_temperature_c(),
+    }
+    log.append(entry)
+    print(entry)
+    time.sleep(2)
+
+# Access the third reading's pressure
+print("Sample 3 pressure:", log[2]["pressure_hpa"])</code></pre>
+                </div>
+
+                <figure class="lab-figure" role="group" aria-labelledby="dict-list-diagram-png-caption">
+                    <img src="" data-suggested-filename="assets/images/dict-list-diagram.png"
+                         alt="Diagram showing a list containing three dictionary boxes, each labeled with keys sample, pressure_hpa, and temperature_c mapping to their values."
+                         width="700" height="420"
+                         loading="lazy">
+                    <figcaption id="dict-list-diagram-png-caption">Figure 2: A list of dictionaries — each entry is a self-labeled reading.</figcaption>
+                </figure>
+            </section>
+
+            <section id="file-writing" class="section" aria-labelledby="file-writing-heading">
+                <h2 id="file-writing-heading">Part 4: Writing the Log to a File</h2>
+                <p>Readings stored only in a list disappear the moment your program stops. To keep a permanent record, we write them to a <strong>file</strong> on the board's flash storage using <code>open()</code>.</p>
+
+                <div class="code-block">
+                    <span class="code-caption">Python — write_log.py</span>
+                    <pre><code>import machine
+import time
+from lps22hb import LPS22HB
+
+i2c = machine.I2C(1)
+barometer = LPS22HB(i2c)
+
+# "w" = write mode (creates the file, or erases it if it already exists)
+with open("pressure_log.csv", "w") as log_file:
+    log_file.write("sample,pressure_hpa,temperature_c\n")
+
+    for i in range(5):
+        pressure = barometer.read_pressure_hpa()
+        temperature = barometer.read_temperature_c()
+        log_file.write(f"{i + 1},{pressure:.2f},{temperature:.2f}\n")
+        print(f"Logged sample {i + 1}")
+        time.sleep(2)
+
+print("Done. Saved to pressure_log.csv")</code></pre>
+                </div>
+
+                <div class="table-responsive" role="region" aria-label="File modes">
+                    <table class="tt-table" summary="Common file open modes in Python">
+                        <thead><tr><th scope="col">Mode</th><th scope="col">Meaning</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>"w"</code></td><td>Write — creates a new file, overwrites if it already exists.</td></tr>
+                            <tr><td><code>"a"</code></td><td>Append — adds to the end of an existing file without erasing it.</td></tr>
+                            <tr><td><code>"r"</code></td><td>Read — opens an existing file to read its contents.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="instructions" role="note" aria-label="Why the with keyword">
+                    <strong>💡 Why <code>with</code>?</strong> The <code>with open(...) as log_file:</code> pattern automatically closes the file for you when the block ends — even if an error happens partway through. Always prefer it over calling <code>open()</code>/<code>close()</code> manually.
+                </div>
+
+                <h3 id="read-back">Reading the Log Back</h3>
+                <div class="code-block">
+                    <span class="code-caption">Python — read_log.py</span>
+                    <pre><code>with open("pressure_log.csv", "r") as log_file:
+    contents = log_file.read()
+
+print(contents)</code></pre>
+                </div>
+
+                <p>In Thonny, you can also open <span class="ui-path">View &gt; Files</span>, find <code>pressure_log.csv</code> under the MicroPython device, and double-click it to view or download the file directly.</p>
+
+                <figure class="lab-figure" role="group" aria-labelledby="thonny-files-view-png-caption">
+                    <img src="" data-suggested-filename="assets/images/thonny-files-view.png"
+                         alt="Screenshot of Thonny's Files panel showing the MicroPython device file list with pressure_log.csv highlighted."
+                         width="700" height="420"
+                         loading="lazy">
+                    <figcaption id="thonny-files-view-png-caption">Figure 3: Viewing the saved log file in Thonny's Files panel.</figcaption>
+                </figure>
+            </section>
+
+            <section id="appendix" class="section" aria-labelledby="appendix-heading">
+                <h2 id="appendix-heading">Appendix — Quick Reference</h2>
+                <h3 id="lps22hb-api">LPS22HB Driver Reference</h3>
+                <div class="table-responsive" role="region" aria-label="LPS22HB driver methods">
+                    <table class="tt-table" summary="Methods available on the LPS22HB driver object">
+                        <thead><tr><th scope="col">Method</th><th scope="col">Returns</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>LPS22HB(i2c)</code></td><td>Creates a sensor object on the given I2C bus.</td></tr>
+                            <tr><td><code>barometer.read_pressure_hpa()</code></td><td>Float — pressure in hectopascals.</td></tr>
+                            <tr><td><code>barometer.read_temperature_c()</code></td><td>Float — internal die temperature in Celsius.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h3 id="list-dict-methods">List &amp; Dictionary Methods</h3>
+                <div class="table-responsive" role="region" aria-label="List and dictionary methods">
+                    <table class="tt-table" summary="Common list and dictionary methods">
+                        <thead><tr><th scope="col">Method</th><th scope="col">What it does</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>list.append(x)</code></td><td>Adds <code>x</code> to the end of the list.</td></tr>
+                            <tr><td><code>len(list)</code></td><td>Number of items in the list.</td></tr>
+                            <tr><td><code>sum(list)</code></td><td>Total of all numeric items.</td></tr>
+                            <tr><td><code>dict[key]</code></td><td>Look up a value by its key.</td></tr>
+                            <tr><td><code>dict.keys()</code></td><td>All keys in the dictionary.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <nav class="pager" aria-label="Lab navigation">
+                <a class="pager-prev" href="../lab03-weather-reporter/index.html">
+                    <span class="pager-label">Previous lab</span>
+                    <span class="pager-title">Lab 3: Weather Reporter</span>
+                </a>
+                <a class="pager-next" href="../lab05-virtual-level/index.html">
+                    <span class="pager-label">Next lab</span>
+                    <span class="pager-title">Lab 5: The Virtual Level →</span>
+                </a>
+            </nav>
+        </main>
+
+        <aside class="toc" data-toc aria-label="On this page">
+            <details open>
+                <summary>On this page</summary>
+                <nav aria-label="Table of contents">
+                    <ul>
+                        <li><a href="#objectives">Learning Objectives</a></li>
+                        <li><a href="#meet-lps22hb">Part 1: Meet the LPS22HB Sensor</a></li>
+                        <li><a href="#lists">Part 2: Storing Readings in a List</a></li>
+                        <li><a href="#dictionaries">Part 3: Labeling Data with Dictionaries</a></li>
+                        <li><a href="#file-writing">Part 4: Writing the Log to a File</a></li>
+                        <li><a href="#appendix">Appendix — Quick Reference</a></li>
+                    </ul>
+                </nav>
+            </details>
+        </aside>
+    </div>
+
+    <footer class="site-footer" role="contentinfo">
+        <div class="footer-inner">
+            <p>Programming Fundamentals · The CE Lounge · Spring 2026</p>
+            <p class="bits" aria-hidden="true">0 1 1 0 · 1 0 0 1</p>
+        </div>
+    </footer>
+</body>
+</html>

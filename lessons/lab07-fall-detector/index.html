@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Lab 7: Fall Detector · Programming Fundamentals</title>
+    <meta name="description" content="Detect a free-fall-then-impact signature with the BMI270 accelerometer using layered logic thresholds.">
+
+    <link rel="icon" type="image/png" href="../../assets/images/favicon-32.png" sizes="32x32">
+    <link rel="icon" type="image/png" href="../../assets/images/favicon-16.png" sizes="16x16">
+    <link rel="apple-touch-icon" href="../../assets/images/apple-touch-icon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="../../assets/css/site.css">
+    <link rel="stylesheet" href="../../assets/css/lab-common.css">
+    <link rel="stylesheet" href="lab-styles.css">
+
+    <script src="../../assets/js/site.js" defer></script>
+    <script src="../../assets/js/lab-common.js" defer></script>
+</head>
+<body>
+    <a class="skip-link" href="#main-content">Skip to main content</a>
+
+    <header class="site-header" role="banner">
+        <div class="header-inner">
+            <a class="brand" href="../../index.html" aria-label="Programming Fundamentals — Home">
+                <img class="brand-mark" src="../../assets/images/logo-mark-64.png" alt="" width="36" height="36">
+                <span>Programming Fundamentals<span class="brand-course">The CE Lounge · Lab Materials</span></span>
+            </a>
+            <nav class="site-nav" aria-label="Course">
+                <ul>
+                    <li><a href="../../index.html">All labs</a></li>
+                </ul>
+            </nav>
+            <button type="button" class="theme-toggle" aria-pressed="false" aria-label="Switch to dark theme">🌙<span class="theme-label">Dark</span></button>
+        </div>
+    </header>
+
+    <div class="hero">
+        <p class="eyebrow">
+            <span aria-hidden="true">Lab 007 / 014</span>
+            <span class="sr-only">Lab 7 of 14</span>
+        </p>
+        <h1>Lab <span class="accent">Fall Detector</span></h1>
+        <hr class="trace-rule" aria-hidden="true">
+        <p class="lede">Recognize the acceleration signature of a fall, combine layered logic thresholds, and explore the difference between polling and hardware interrupts.</p>
+    </div>
+
+    <div class="page-grid">
+        <main id="main-content" class="content">
+
+            <section id="objectives" class="section" aria-labelledby="objectives-heading">
+                <h2 id="objectives-heading">Learning Objectives</h2>
+                <p>By the end of this lab, you will be able to:</p>
+                <ol>
+                    <li>Recognize the acceleration signature of a <strong>free-fall</strong> event.</li>
+                    <li>Combine multiple <strong>logic thresholds</strong> to distinguish a fall from normal motion.</li>
+                    <li>Understand the difference between <strong>polling</strong> and <strong>interrupts</strong>.</li>
+                    <li>Build a multi-stage detector: free-fall, followed by an impact spike.</li>
+                    <li>Trigger an alert (LED + message) when a fall pattern is detected.</li>
+                </ol>
+
+                <div class="example-card" role="note" aria-label="Lab information">
+                    <h3 id="lab-meta-heading">Lab Information</h3>
+                    <dl class="lab-meta-list">
+                        <dt>Hardware</dt>
+                        <dd>BMI270 6-Axis IMU — Accelerometer (onboard, I2C)</dd>
+                        <dt>Duration</dt>
+                        <dd>75–100 minutes</dd>
+                        <dt>Prerequisites</dt>
+                        <dd>Lab 6: Pedometer Logic</dd>
+                        <dt>Key Concepts</dt>
+                        <dd>Logic thresholds, interrupt concepts</dd>
+                    </dl>
+                </div>
+            </section>
+
+            <section id="freefall-physics" class="section" aria-labelledby="freefall-physics-heading">
+                <h2 id="freefall-physics-heading">Part 1: What Free-Fall Looks Like to an Accelerometer</h2>
+                <p>This is the most counter-intuitive idea in the whole course: <strong>an object in free-fall reads close to <code>0</code> g</strong> on an accelerometer, not <code>1</code> g. Sitting still, gravity pushes the sensor's internal mass against its housing, which the chip reads as <code>1</code> g. During free-fall, the whole sensor <em>and</em> its internal mass are falling together — there's no relative force to measure, so the reading drops toward zero.</p>
+
+                <figure class="lab-figure" role="group" aria-labelledby="freefall-vs-still-vs-impact-graph-png-caption">
+                    <img src="" data-suggested-filename="assets/images/freefall-vs-still-vs-impact-graph.png"
+                         alt="Line graph of acceleration magnitude over time showing three distinct zones: a flat line near 1.0g at rest, a dip toward 0.0g during a fall, and a sharp spike well above 1.0g at the moment of impact."
+                         width="700" height="420"
+                         loading="lazy">
+                    <figcaption id="freefall-vs-still-vs-impact-graph-png-caption">Figure 1: The three-stage acceleration signature of a fall — rest, free-fall dip, impact spike.</figcaption>
+                </figure>
+
+                <p>A real fall has a recognizable <strong>three-part signature</strong>:</p>
+                <ol>
+                    <li><strong>Rest</strong> — magnitude near 1.0 g.</li>
+                    <li><strong>Free-fall</strong> — magnitude drops sharply, near 0.0 g, for a brief moment.</li>
+                    <li><strong>Impact</strong> — magnitude spikes well above 1.0 g as the fall is stopped.</li>
+                </ol>
+                <p>Detecting <em>only</em> a low reading, or <em>only</em> a high spike, causes false alarms — plenty of ordinary motions produce one or the other alone. A reliable detector looks for the low-then-high <strong>sequence</strong>.</p>
+            </section>
+
+            <section id="multi-threshold" class="section" aria-labelledby="multi-threshold-heading">
+                <h2 id="multi-threshold-heading">Part 2: Combining Thresholds for a Reliable Detector</h2>
+                <p>Building on Lab 6's magnitude and thresholding, we now need <strong>two</strong> thresholds and a short memory of what already happened:</p>
+
+                <div class="code-block">
+                    <span class="code-caption">Python — fall_detector.py</span>
+                    <pre><code>import machine
+import math
+import time
+from bmi270 import BMI270
+
+i2c = machine.I2C(1)
+imu = BMI270(i2c)
+
+FREEFALL_THRESHOLD = 0.4   # g — below this, we may be falling
+IMPACT_THRESHOLD = 2.5     # g — above this, right after a free-fall, is an impact
+WATCH_WINDOW = 1.0         # seconds to watch for impact after a free-fall dip
+
+falling_since = None
+
+print("Fall detector armed. Ctrl+C to stop.")
+
+while True:
+    x, y, z = imu.read_accel()
+    magnitude = math.sqrt(x**2 + y**2 + z**2)
+    now = time.ticks_ms()
+
+    if magnitude < FREEFALL_THRESHOLD and falling_since is None:
+        falling_since = now
+        print(f"Free-fall detected (magnitude={magnitude:.2f} g)...")
+
+    elif falling_since is not None:
+        elapsed = time.ticks_diff(now, falling_since) / 1000
+
+        if magnitude > IMPACT_THRESHOLD:
+            print("FALL DETECTED! Free-fall followed by impact.")
+            falling_since = None
+
+        elif elapsed > WATCH_WINDOW:
+            # Too much time passed without an impact -- false alarm, reset
+            falling_since = None
+
+    time.sleep(0.02)</code></pre>
+                </div>
+
+                <p>Walk through the logic: as soon as magnitude dips below <code>FREEFALL_THRESHOLD</code>, we start a timer (<code>falling_since</code>). If an impact spike arrives within <code>WATCH_WINDOW</code> seconds, we declare a fall. If nothing happens in time, we quietly reset and keep watching — this rejects momentary dips that aren't real falls.</p>
+            </section>
+
+            <section id="polling-vs-interrupts" class="section" aria-labelledby="polling-vs-interrupts-heading">
+                <h2 id="polling-vs-interrupts-heading">Part 3: Polling vs. Interrupts</h2>
+                <p>Every program you've written so far uses <strong>polling</strong>: a loop that repeatedly asks the sensor "what's your value <em>right now</em>?" This is simple and works well for a fall detector, but it has a real cost — the board is constantly busy checking, even when nothing is happening, which wastes power and can miss events that occur <em>between</em> checks if the loop is too slow.</p>
+
+                <p>Many real embedded systems instead use <strong>hardware interrupts</strong>: the sensor itself watches for a condition (like a sudden acceleration spike) and sends an electrical signal straight to the processor the instant it happens, which pauses whatever the processor was doing to handle the event immediately. The BMI270 chip actually supports this internally, but this course keeps things simple by polling — it's important to understand the trade-off even if we don't implement true interrupts here.</p>
+
+                <div class="table-responsive" role="region" aria-label="Polling versus interrupts">
+                    <table class="tt-table" summary="Comparison of polling and interrupt-driven event detection">
+                        <thead><tr><th scope="col"></th><th scope="col">Polling</th><th scope="col">Interrupts</th></tr></thead>
+                        <tbody>
+                            <tr><td>How it works</td><td>Loop repeatedly checks the value</td><td>Hardware signals the processor the instant an event occurs</td></tr>
+                            <tr><td>Power use</td><td>Higher — CPU is always active</td><td>Lower — CPU can sleep between events</td></tr>
+                            <tr><td>Complexity</td><td>Simple to write and reason about</td><td>More complex; requires careful, fast handler code</td></tr>
+                            <tr><td>Timing precision</td><td>Limited by loop speed (<code>time.sleep()</code>)</td><td>Very precise — responds immediately</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <figure class="lab-figure" role="group" aria-labelledby="polling-vs-interrupt-timeline-png-caption">
+                    <img src="" data-suggested-filename="assets/images/polling-vs-interrupt-timeline.png"
+                         alt="Two side-by-side timeline diagrams: the top one shows a CPU repeatedly checking a sensor at fixed intervals labeled poll poll poll, the bottom shows a CPU idle until a single interrupt signal arrow arrives from the sensor and immediately triggers a handler."
+                         width="700" height="420"
+                         loading="lazy">
+                    <figcaption id="polling-vs-interrupt-timeline-png-caption">Figure 2: Polling checks on a schedule; an interrupt reacts the instant an event happens.</figcaption>
+                </figure>
+
+                <div class="instructions" role="note" aria-label="Why polling here">
+                    <strong>💡 Why we poll in this lab:</strong> A fast polling loop (<code>time.sleep(0.02)</code>, i.e. 50 checks per second) is quick enough to reliably catch a fall, which typically takes several hundred milliseconds from free-fall to impact — plenty of time for polling to keep up.
+                </div>
+            </section>
+
+            <section id="led-alert" class="section" aria-labelledby="led-alert-heading">
+                <h2 id="led-alert-heading">Part 4: Adding a Visual Alert</h2>
+                <p>Let's use what you learned in Lab 2 to flash the onboard RGB LED red when a fall is detected, in addition to the printed message.</p>
+
+                <div class="code-block">
+                    <span class="code-caption">Python — fall_detector_with_alert.py</span>
+                    <pre><code>import machine
+import math
+import time
+from bmi270 import BMI270
+
+i2c = machine.I2C(1)
+imu = BMI270(i2c)
+red_led = machine.PWM(machine.Pin(10))
+
+def alert_flash():
+    # Active-Low: 0 = on. Flash red 5 times.
+    for _ in range(5):
+        red_led.duty_u16(0)
+        time.sleep(0.1)
+        red_led.duty_u16(65535)
+        time.sleep(0.1)
+
+FREEFALL_THRESHOLD = 0.4
+IMPACT_THRESHOLD = 2.5
+WATCH_WINDOW = 1.0
+
+falling_since = None
+print("Fall detector armed. Ctrl+C to stop.")
+
+while True:
+    x, y, z = imu.read_accel()
+    magnitude = math.sqrt(x**2 + y**2 + z**2)
+    now = time.ticks_ms()
+
+    if magnitude < FREEFALL_THRESHOLD and falling_since is None:
+        falling_since = now
+
+    elif falling_since is not None:
+        elapsed = time.ticks_diff(now, falling_since) / 1000
+
+        if magnitude > IMPACT_THRESHOLD:
+            print("FALL DETECTED!")
+            alert_flash()
+            falling_since = None
+        elif elapsed > WATCH_WINDOW:
+            falling_since = None
+
+    time.sleep(0.02)</code></pre>
+                </div>
+            </section>
+
+            <section id="appendix" class="section" aria-labelledby="appendix-heading">
+                <h2 id="appendix-heading">Appendix — Quick Reference</h2>
+                <h3 id="time-functions">Useful Time Functions</h3>
+                <div class="table-responsive" role="region" aria-label="Time functions">
+                    <table class="tt-table" summary="Time-related MicroPython functions used in this lab">
+                        <thead><tr><th scope="col">Function</th><th scope="col">What it does</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>time.ticks_ms()</code></td><td>Returns a millisecond counter, useful for timing events.</td></tr>
+                            <tr><td><code>time.ticks_diff(a, b)</code></td><td>Safely computes <code>a - b</code> for two <code>ticks_ms()</code> values.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h3 id="fall-thresholds">Suggested Starting Thresholds</h3>
+                <div class="table-responsive" role="region" aria-label="Suggested thresholds">
+                    <table class="tt-table" summary="Suggested starting threshold values">
+                        <thead><tr><th scope="col">Constant</th><th scope="col">Suggested value</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>FREEFALL_THRESHOLD</code></td><td>0.3 – 0.5 g</td></tr>
+                            <tr><td><code>IMPACT_THRESHOLD</code></td><td>2.0 – 3.0 g</td></tr>
+                            <tr><td><code>WATCH_WINDOW</code></td><td>0.5 – 1.5 seconds</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="callout-warning" role="alert" aria-label="Safety note">
+                    <strong>⚠️ Safety note:</strong> Never drop the board directly onto a hard surface to test this. Drop it a short distance onto a cushion, pillow, or carpet, or simulate the motion by hand with a firm downward-then-stop motion.
+                </div>
+            </section>
+
+            <nav class="pager" aria-label="Lab navigation">
+                <a class="pager-prev" href="../lab06-pedometer-logic/index.html">
+                    <span class="pager-label">Previous lab</span>
+                    <span class="pager-title">Lab 6: Pedometer Logic</span>
+                </a>
+                <a class="pager-next" href="../lab08-sleep-tracker/index.html">
+                    <span class="pager-label">Next lab</span>
+                    <span class="pager-title">Lab 8: Sleep Tracker →</span>
+                </a>
+            </nav>
+        </main>
+
+        <aside class="toc" data-toc aria-label="On this page">
+            <details open>
+                <summary>On this page</summary>
+                <nav aria-label="Table of contents">
+                    <ul>
+                        <li><a href="#objectives">Learning Objectives</a></li>
+                        <li><a href="#freefall-physics">Part 1: What Free-Fall Looks Like to an Accelerometer</a></li>
+                        <li><a href="#multi-threshold">Part 2: Combining Thresholds for a Reliable Detector</a></li>
+                        <li><a href="#polling-vs-interrupts">Part 3: Polling vs. Interrupts</a></li>
+                        <li><a href="#led-alert">Part 4: Adding a Visual Alert</a></li>
+                        <li><a href="#appendix">Appendix — Quick Reference</a></li>
+                    </ul>
+                </nav>
+            </details>
+        </aside>
+    </div>
+
+    <footer class="site-footer" role="contentinfo">
+        <div class="footer-inner">
+            <p>Programming Fundamentals · The CE Lounge · Spring 2026</p>
+            <p class="bits" aria-hidden="true">0 1 1 0 · 1 0 0 1</p>
+        </div>
+    </footer>
+</body>
+</html>

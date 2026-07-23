@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home · Programming Fundamentals</title>
+    <meta name="description" content="Interactive lab materials for The CE Lounge: Programming Fundamentals. Learn Python programming through embedded programming and sensor interfacing with the Arduino NANO BLE Sense Rev2.">
+    <link rel="icon" type="image/png" href="assets/images/favicon-32.png" sizes="32x32">
+    <link rel="icon" type="image/png" href="assets/images/favicon-16.png" sizes="16x16">
+    <link rel="apple-touch-icon" href="assets/images/apple-touch-icon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="assets/css/site.css">
+    <script src="assets/js/site.js" defer></script>
+</head>
+<body>
+    <a class="skip-link" href="#main-content">Skip to main content</a>
+
+    <header class="site-header" role="banner">
+        <div class="header-inner">
+            <a class="brand" href="index.html" aria-label="Programming Fundamentals — Home">
+                <img class="brand-mark" src="assets/images/logo-mark-64.png" alt="" width="36" height="36">
+                <span>Programming Fundamentals<span class="brand-course">The CE Lounge · Lab Materials</span></span>
+            </a>
+            <nav class="site-nav" aria-label="Course">
+                <ul>
+                    <li><a href="index.html" aria-current="page">All labs</a></li>
+                </ul>
+            </nav>
+            <button type="button" class="theme-toggle" aria-pressed="false" aria-label="Switch to dark theme">🌙<span class="theme-label">Dark</span></button>
+        </div>
+    </header>
+
+    <div class="hero">
+        <p class="eyebrow"><span aria-hidden="true">The CE Lounge · 14 labs</span><span class="sr-only">The CE Lounge · 14 labs</span></p>
+        <h1>Programming <span class="accent">Fundamentals</span></h1>
+        <hr class="trace-rule" aria-hidden="true">
+        <p class="lede">Fourteen hands-on labs using the onboard sensors of the Arduino NANO 33 BLE Sense Rev2 — no extra components required. Learn core Python concepts, one sensor at a time, from your first <code>while</code> loop to exception handling.</p>
+    </div>
+
+    <div class="page-grid">
+        <main id="main-content" class="content">
+            <h2 class="sr-only">Labs</h2>
+            <ul class="lesson-list">
+            <li>
+                <article class="lesson-card">
+                    <p class="lesson-num"><span aria-hidden="true">Lab 010</span><span class="sr-only">Lab 1</span></p>
+                    <h3><a href="lessons/lab01-blink-loop/index.html">Blink & Loop</a></h3>
+                    <p class="lesson-desc">Your first steps into embedded programming. Install Thonny IDE, connect the Arduino NANO BLE Sense, and write a MicroPython program that blinks the onboard LED.</p>
+                    <p class="lesson-cta" aria-hidden="true">Start lab →</p>
+                </article>
+            </li>
+            <li>
+                <article class="lesson-card">
+                    <p class="lesson-num"><span aria-hidden="true">Lab 020</span><span class="sr-only">Lab 2</span></p>
+                    <h3><a href="lessons/lab02-color-theory/index.html">Color Theory</a></h3>
+                    <p class="lesson-desc">Learn how RGB LEDs mix color, understand Active-Low logic, and write functions to create millions of colors using PWM.</p>
+                    <p class="lesson-cta" aria-hidden="true">Start lab →</p>
+                </article>
+            </li>
+            <li>
+                <article class="lesson-card">
+                    <p class="lesson-num"><span aria-hidden="true">Lab 030</span><span class="sr-only">Lab 3</span></p>
+                    <h3><a href="lessons/lab03-weather-reporter/index.html">Weather Reporter</a></h3>
+                    <p class="lesson-desc">Interface with the onboard HS3003 temperature/humidity sensor, work with floats, and use f-strings to format a readable weather report.</p>
+                    <p class="lesson-cta" aria-hidden="true">Start lab →</p>
+                </article>
+            </li>
+            <li>
+                <article class="lesson-card">
+                    <p class="lesson-num"><span aria-hidden="true">Lab 040</span><span class="sr-only">Lab 4</span></p>
+                    <h3><a href="lessons/lab04-data-logger/index.html">Data Logger</a></h3>
+                    <p class="lesson-desc">Read the onboard LPS22HB barometer, store readings in lists and dictionaries, and write a data log out to a file.</p>
+                    <p class="lesson-cta" aria-hidden="true">Start lab →</p>
+                </article>
+            </li>
+            <li>
+                <article class="lesson-card">
+                    <p class="lesson-num"><span aria-hidden="true">Lab 050</span><span class="sr-only">Lab 5</span></p>
+                    <h3><a href="lessons/lab05-virtual-level/index.html">The Virtual Level</a></h3>
+                    <p class="lesson-desc">Read 3-axis accelerometer data from the BMI270, use the math module for trigonometry, and map raw values onto a coordinate system.</p>
+                    <p class="lesson-cta" aria-hidden="true">Start lab →</p>
+                </article>
+            </li>
+            <li>
+                <article class="lesson-card">
+                    <p class="lesson-num"><span aria-hidden="true">Lab 060</span><span class="sr-only">Lab 6</span></p>
+                    <h3><a href="lessons/lab06-pedometer-logic/index.html">Pedometer Logic</a></h3>
+                    <p class="lesson-desc">Detect steps from accelerometer data using comparisons and thresholding — the logic behind every fitness tracker.</p>
+                    <p class="lesson-cta" aria-hidden="true">Start lab →</p>
+                </article>
+            </li>
+            <li>
+                <article class="lesson-card">
+                    <p class="lesson-num"><span aria-hidden="true">Lab 070</span><span class="sr-only">Lab 7</span></p>
+                    <h3><a href="lessons/lab07-fall-detector/index.html">Fall Detector</a></h3>
+                    <p class="lesson-desc">Use the BMI270 accelerometer and logic thresholds to detect a sudden free-fall event, exploring the ideas behind hardware interrupts.</p>
+                    <p class="lesson-cta" aria-hidden="true">Start lab →</p>
+                </article>
+            </li>
+            <li>
+                <article class="lesson-card">
+                    <p class="lesson-num"><span aria-hidden="true">Lab 080</span><span class="sr-only">Lab 8</span></p>
+                    <h3><a href="lessons/lab08-sleep-tracker/index.html">Sleep Tracker</a></h3>
+                    <p class="lesson-desc">Use the BMI270 gyroscope and the time module to log movement events overnight and estimate sleep quality.</p>
+                    <p class="lesson-cta" aria-hidden="true">Start lab →</p>
+                </article>
+            </li>
+            <li>
+                <article class="lesson-card">
+                    <p class="lesson-num"><span aria-hidden="true">Lab 090</span><span class="sr-only">Lab 9</span></p>
+                    <h3><a href="lessons/lab09-spirit-level/index.html">Digital Spirit Level</a></h3>
+                    <p class="lesson-desc">Combine the BMI270's accelerometer and gyroscope with a complementary filter — your first taste of sensor fusion and advanced trigonometry.</p>
+                    <p class="lesson-cta" aria-hidden="true">Start lab →</p>
+                </article>
+            </li>
+            <li>
+                <article class="lesson-card">
+                    <p class="lesson-num"><span aria-hidden="true">Lab 100</span><span class="sr-only">Lab 10</span></p>
+                    <h3><a href="lessons/lab10-gesture-remote/index.html">Gesture Remote</a></h3>
+                    <p class="lesson-desc">Detect hand gestures with the APDS9960, and build a state machine using if/elif/else to turn gestures into remote-control commands.</p>
+                    <p class="lesson-cta" aria-hidden="true">Start lab →</p>
+                </article>
+            </li>
+            <li>
+                <article class="lesson-card">
+                    <p class="lesson-num"><span aria-hidden="true">Lab 110</span><span class="sr-only">Lab 11</span></p>
+                    <h3><a href="lessons/lab11-night-light/index.html">Night-Light</a></h3>
+                    <p class="lesson-desc">Combine the APDS9960's light and proximity readings with logical operators, and calibrate the light threshold for your room.</p>
+                    <p class="lesson-cta" aria-hidden="true">Start lab →</p>
+                </article>
+            </li>
+            <li>
+                <article class="lesson-card">
+                    <p class="lesson-num"><span aria-hidden="true">Lab 120</span><span class="sr-only">Lab 12</span></p>
+                    <h3><a href="lessons/lab12-color-matcher/index.html">Color Matcher</a></h3>
+                    <p class="lesson-desc">Read RGB color data from the APDS9960 color sensor, and use tuples and list comprehensions to match it to the closest named color.</p>
+                    <p class="lesson-cta" aria-hidden="true">Start lab →</p>
+                </article>
+            </li>
+            <li>
+                <article class="lesson-card">
+                    <p class="lesson-num"><span aria-hidden="true">Lab 130</span><span class="sr-only">Lab 13</span></p>
+                    <h3><a href="lessons/lab13-morse-code-encoder/index.html">Morse Code Encoder</a></h3>
+                    <p class="lesson-desc">Use the APDS9960 as a proximity button and the RGB LED as an output to encode typed messages into Morse code, using string slicing and dictionaries.</p>
+                    <p class="lesson-cta" aria-hidden="true">Start lab →</p>
+                </article>
+            </li>
+            <li>
+                <article class="lesson-card">
+                    <p class="lesson-num"><span aria-hidden="true">Lab 140</span><span class="sr-only">Lab 14</span></p>
+                    <h3><a href="lessons/lab14-anomaly-detector/index.html">Anomaly Detector</a></h3>
+                    <p class="lesson-desc">Use the HS3003 sensor and Python's try/except exception handling to build a monitor that detects and reports sensor anomalies.</p>
+                    <p class="lesson-cta" aria-hidden="true">Start lab →</p>
+                </article>
+            </li>
+            </ul>
+        </main>
+    </div>
+
+    <footer class="site-footer" role="contentinfo">
+        <div class="footer-inner">
+            <p>Programming Fundamentals · The CE Lounge · Spring 2026</p>
+            <p class="bits" aria-hidden="true">0 1 1 0 · 1 0 0 1</p>
+        </div>
+    </footer>
+</body>
+</html>

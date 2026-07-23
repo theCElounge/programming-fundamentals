@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Lab 12: Color Matcher · Programming Fundamentals</title>
+    <meta name="description" content="Match APDS9960 color sensor readings to the nearest named color using tuples, distance math, and a list comprehension.">
+
+    <link rel="icon" type="image/png" href="../../assets/images/favicon-32.png" sizes="32x32">
+    <link rel="icon" type="image/png" href="../../assets/images/favicon-16.png" sizes="16x16">
+    <link rel="apple-touch-icon" href="../../assets/images/apple-touch-icon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="../../assets/css/site.css">
+    <link rel="stylesheet" href="../../assets/css/lab-common.css">
+    <link rel="stylesheet" href="lab-styles.css">
+
+    <script src="../../assets/js/site.js" defer></script>
+    <script src="../../assets/js/lab-common.js" defer></script>
+</head>
+<body>
+    <a class="skip-link" href="#main-content">Skip to main content</a>
+
+    <header class="site-header" role="banner">
+        <div class="header-inner">
+            <a class="brand" href="../../index.html" aria-label="Programming Fundamentals — Home">
+                <img class="brand-mark" src="../../assets/images/logo-mark-64.png" alt="" width="36" height="36">
+                <span>Programming Fundamentals<span class="brand-course">The CE Lounge · Lab Materials</span></span>
+            </a>
+            <nav class="site-nav" aria-label="Course">
+                <ul>
+                    <li><a href="../../index.html">All labs</a></li>
+                </ul>
+            </nav>
+            <button type="button" class="theme-toggle" aria-pressed="false" aria-label="Switch to dark theme">🌙<span class="theme-label">Dark</span></button>
+        </div>
+    </header>
+
+    <div class="hero">
+        <p class="eyebrow">
+            <span aria-hidden="true">Lab 012 / 014</span>
+            <span class="sr-only">Lab 12 of 14</span>
+        </p>
+        <h1>Lab <span class="accent">Color Matcher</span></h1>
+        <hr class="trace-rule" aria-hidden="true">
+        <p class="lede">Read RGB color data from the APDS9960, group values with tuples, and use a list comprehension to match readings to the closest named color.</p>
+    </div>
+
+    <div class="page-grid">
+        <main id="main-content" class="content">
+
+            <section id="objectives" class="section" aria-labelledby="objectives-heading">
+                <h2 id="objectives-heading">Learning Objectives</h2>
+                <p>By the end of this lab, you will be able to:</p>
+                <ol>
+                    <li>Read red, green, and blue color data from the <strong>APDS9960</strong> color sensor.</li>
+                    <li>Group related values together using <strong>tuples</strong>.</li>
+                    <li>Calculate color distance between two RGB tuples.</li>
+                    <li>Use a <strong>list comprehension</strong> to find the closest match in a list of named colors.</li>
+                    <li>Build a program that names the color of an object held above the sensor.</li>
+                </ol>
+
+                <div class="example-card" role="note" aria-label="Lab information">
+                    <h3 id="lab-meta-heading">Lab Information</h3>
+                    <dl class="lab-meta-list">
+                        <dt>Hardware</dt>
+                        <dd>APDS9960 Color Sensor (onboard, I2C)</dd>
+                        <dt>Duration</dt>
+                        <dd>60–90 minutes</dd>
+                        <dt>Prerequisites</dt>
+                        <dd>Lab 11: Night-Light</dd>
+                        <dt>Key Concepts</dt>
+                        <dd>Tuples, list comprehensions</dd>
+                    </dl>
+                </div>
+            </section>
+
+            <section id="color-readings" class="section" aria-labelledby="color-readings-heading">
+                <h2 id="color-readings-heading">Part 1: Reading Color as RGB</h2>
+                <p>The APDS9960 has four light-sensing channels: <strong>clear</strong> (overall brightness, used in Lab 11), and separate <strong>red</strong>, <strong>green</strong>, and <strong>blue</strong> channels. Reading all three color channels together gives us the color of whatever's reflecting light back into the sensor.</p>
+
+                <div class="code-block">
+                    <span class="code-caption">Python — color_test.py</span>
+                    <pre><code>import machine
+import time
+from apds9960 import APDS9960
+
+i2c = machine.I2C(1)
+sensor = APDS9960(i2c)
+
+while True:
+    clear, r, g, b = sensor.color()
+    print(f"R={r}  G={g}  B={b}")
+    time.sleep(0.3)</code></pre>
+                </div>
+
+                <p>Hold something brightly colored (a red marker, a blue sticky note) an inch or two above the sensor. The dominant channel should read noticeably higher than the other two.</p>
+
+                <figure class="lab-figure" role="group" aria-labelledby="color-sensing-diagram-png-caption">
+                    <img src="" data-suggested-filename="assets/images/color-sensing-diagram.png"
+                         alt="Diagram showing a colored object held above the APDS9960 sensor with light reflecting back into three separate labeled channels: red, green, and blue."
+                         width="700" height="420"
+                         loading="lazy">
+                    <figcaption id="color-sensing-diagram-png-caption">Figure 1: Reflected light is split into red, green, and blue channels by the sensor.</figcaption>
+                </figure>
+            </section>
+
+            <section id="tuples" class="section" aria-labelledby="tuples-heading">
+                <h2 id="tuples-heading">Part 2: Grouping Values with Tuples</h2>
+                <p>An RGB color is really <em>one</em> idea made of three numbers that belong together. A <strong>tuple</strong> is Python's way of grouping a fixed set of related values into a single object. You've already been receiving tuples all along — every sensor reading in this course, like <code>(x, y, z)</code> from the accelerometer, is a tuple!</p>
+
+                <div class="code-block">
+                    <span class="code-caption">Python — Shell</span>
+                    <pre><code>>>> red_color = (255, 0, 0)
+>>> red_color[0]
+255
+>>> len(red_color)
+3
+>>> name, rgb = ("Red", (255, 0, 0))
+>>> name
+'Red'
+>>> rgb
+(255, 0, 0)</code></pre>
+                </div>
+
+                <div class="table-responsive" role="region" aria-label="Tuples versus lists">
+                    <table class="tt-table" summary="Comparison of tuples and lists">
+                        <thead><tr><th scope="col"></th><th scope="col">Tuple <code>(1, 2, 3)</code></th><th scope="col">List <code>[1, 2, 3]</code></th></tr></thead>
+                        <tbody>
+                            <tr><td>Can change size/contents?</td><td>No — fixed once created</td><td>Yes — <code>append()</code>, <code>remove()</code>, etc.</td></tr>
+                            <tr><td>Typical use</td><td>A fixed group of related values (a coordinate, an RGB color)</td><td>A growing collection (a log of readings)</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <p>Let's build a small reference palette of named colors, each one a <code>(name, (r, g, b))</code> pair:</p>
+
+                <div class="code-block">
+                    <span class="code-caption">Python — palette.py</span>
+                    <pre><code>NAMED_COLORS = [
+    ("Red",    (255, 0, 0)),
+    ("Green",  (0, 255, 0)),
+    ("Blue",   (0, 0, 255)),
+    ("Yellow", (255, 255, 0)),
+    ("Cyan",   (0, 255, 255)),
+    ("Magenta",(255, 0, 255)),
+    ("White",  (255, 255, 255)),
+    ("Black",  (0, 0, 0)),
+]</code></pre>
+                </div>
+            </section>
+
+            <section id="color-distance" class="section" aria-labelledby="color-distance-heading">
+                <h2 id="color-distance-heading">Part 3: Measuring Color Distance</h2>
+                <p>To find the <em>closest</em> named color to a sensor reading, we treat each RGB triplet as a point in 3D space and measure the distance between them — the same distance formula you used for acceleration magnitude in Lab 6, just applied to color instead of motion.</p>
+
+                <div class="formula-box" role="note" aria-label="Color distance formula">
+                    distance = √((r₁-r₂)² + (g₁-g₂)² + (b₁-b₂)²)
+                </div>
+
+                <div class="code-block">
+                    <span class="code-caption">Python — color_distance.py</span>
+                    <pre><code>import math
+
+def color_distance(color_a, color_b):
+    r1, g1, b1 = color_a
+    r2, g2, b2 = color_b
+    return math.sqrt((r1 - r2)**2 + (g1 - g2)**2 + (b1 - b2)**2)
+
+print(color_distance((255, 0, 0), (200, 20, 10)))   # a reddish color -- small distance
+print(color_distance((255, 0, 0), (0, 0, 255)))     # red vs blue -- large distance</code></pre>
+                </div>
+            </section>
+
+            <section id="list-comprehension" class="section" aria-labelledby="list-comprehension-heading">
+                <h2 id="list-comprehension-heading">Part 4: Finding the Closest Match with a List Comprehension</h2>
+                <p>A <strong>list comprehension</strong> builds a new list from an existing one in a single, compact line — instead of writing a full <code>for</code> loop with <code>.append()</code>. It's especially handy when you want to transform every item in a collection the same way.</p>
+
+                <div class="code-block">
+                    <span class="code-caption">Python — Shell</span>
+                    <pre><code>>>> numbers = [1, 2, 3, 4]
+>>> squares = [n * n for n in numbers]
+>>> squares
+[1, 4, 9, 16]
+
+# The same thing without a comprehension:
+>>> squares = []
+>>> for n in numbers:
+...     squares.append(n * n)</code></pre>
+                </div>
+
+                <p>Now let's use one to compute the distance from a sensor reading to <em>every</em> named color at once, then pick the smallest:</p>
+
+                <div class="code-block">
+                    <span class="code-caption">Python — color_matcher.py</span>
+                    <pre><code>import machine
+import math
+import time
+from apds9960 import APDS9960
+
+i2c = machine.I2C(1)
+sensor = APDS9960(i2c)
+
+NAMED_COLORS = [
+    ("Red",     (255, 0, 0)),
+    ("Green",   (0, 255, 0)),
+    ("Blue",    (0, 0, 255)),
+    ("Yellow",  (255, 255, 0)),
+    ("Cyan",    (0, 255, 255)),
+    ("Magenta", (255, 0, 255)),
+    ("White",   (255, 255, 255)),
+    ("Black",   (0, 0, 0)),
+]
+
+def color_distance(color_a, color_b):
+    r1, g1, b1 = color_a
+    r2, g2, b2 = color_b
+    return math.sqrt((r1 - r2)**2 + (g1 - g2)**2 + (b1 - b2)**2)
+
+def closest_color_name(reading):
+    # List comprehension: one (name, distance) pair per named color
+    distances = [(name, color_distance(reading, rgb)) for name, rgb in NAMED_COLORS]
+    # min() with a key function finds the pair with the smallest distance
+    closest_name, closest_distance = min(distances, key=lambda pair: pair[1])
+    return closest_name
+
+while True:
+    clear, r, g, b = sensor.color()
+    name = closest_color_name((r, g, b))
+    print(f"Detected: {name}  (R={r} G={g} B={b})")
+    time.sleep(0.5)</code></pre>
+                </div>
+
+                <figure class="lab-figure" role="group" aria-labelledby="color-matcher-shell-output-png-caption">
+                    <img src="" data-suggested-filename="assets/images/color-matcher-shell-output.png"
+                         alt="Screenshot of the Thonny shell showing repeated lines of output such as Detected: Red followed by the raw RGB values in parentheses."
+                         width="700" height="420"
+                         loading="lazy">
+                    <figcaption id="color-matcher-shell-output-png-caption">Figure 2: The matcher naming a detected color once per half-second.</figcaption>
+                </figure>
+
+                <div class="instructions" role="note" aria-label="min with a key">
+                    <strong>💡 <code>min()</code> with a key:</strong> By default <code>min()</code> compares items directly, which wouldn't work well on <code>(name, distance)</code> pairs. The <code>key=lambda pair: pair[1]</code> tells <code>min()</code> to compare using only the distance (the second item), not the name.
+                </div>
+            </section>
+
+            <section id="appendix" class="section" aria-labelledby="appendix-heading">
+                <h2 id="appendix-heading">Appendix — Quick Reference</h2>
+                <h3 id="apds9960-color-api">APDS9960 Driver Reference (Color)</h3>
+                <div class="table-responsive" role="region" aria-label="APDS9960 color methods">
+                    <table class="tt-table" summary="Color-related methods on the APDS9960 driver object">
+                        <thead><tr><th scope="col">Method</th><th scope="col">Returns</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>sensor.color()</code></td><td>Tuple <code>(clear, r, g, b)</code>, each 0–255.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h3 id="comprehension-syntax">List Comprehension Syntax</h3>
+                <div class="code-block">
+                    <span class="code-caption">Pattern</span>
+                    <pre><code>[expression for item in iterable]
+[expression for item in iterable if condition]</code></pre>
+                </div>
+            </section>
+
+            <nav class="pager" aria-label="Lab navigation">
+                <a class="pager-prev" href="../lab11-night-light/index.html">
+                    <span class="pager-label">Previous lab</span>
+                    <span class="pager-title">Lab 11: Night-Light</span>
+                </a>
+                <a class="pager-next" href="../lab13-morse-code-encoder/index.html">
+                    <span class="pager-label">Next lab</span>
+                    <span class="pager-title">Lab 13: Morse Code Encoder →</span>
+                </a>
+            </nav>
+        </main>
+
+        <aside class="toc" data-toc aria-label="On this page">
+            <details open>
+                <summary>On this page</summary>
+                <nav aria-label="Table of contents">
+                    <ul>
+                        <li><a href="#objectives">Learning Objectives</a></li>
+                        <li><a href="#color-readings">Part 1: Reading Color as RGB</a></li>
+                        <li><a href="#tuples">Part 2: Grouping Values with Tuples</a></li>
+                        <li><a href="#color-distance">Part 3: Measuring Color Distance</a></li>
+                        <li><a href="#list-comprehension">Part 4: Finding the Closest Match with a List Comprehension</a></li>
+                        <li><a href="#appendix">Appendix — Quick Reference</a></li>
+                    </ul>
+                </nav>
+            </details>
+        </aside>
+    </div>
+
+    <footer class="site-footer" role="contentinfo">
+        <div class="footer-inner">
+            <p>Programming Fundamentals · The CE Lounge · Spring 2026</p>
+            <p class="bits" aria-hidden="true">0 1 1 0 · 1 0 0 1</p>
+        </div>
+    </footer>
+</body>
+</html>

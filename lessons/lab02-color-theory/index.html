@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lab 2: Color Theory · Programming Fundamentals</title>
+    <meta name="description" content="Learn RGB LED control, PWM brightness, and Active-Low logic using the Arduino NANO BLE Sense onboard RGB LED.">
+    <link rel="icon" type="image/png" href="../../assets/images/favicon-32.png" sizes="32x32">
+    <link rel="icon" type="image/png" href="../../assets/images/favicon-16.png" sizes="16x16">
+    <link rel="apple-touch-icon" href="../../assets/images/apple-touch-icon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../../assets/css/site.css">
+    <link rel="stylesheet" href="../../assets/css/lab-common.css">
+    <link rel="stylesheet" href="lab-styles.css">
+    <script src="../../assets/js/site.js" defer></script>
+    <script src="../../assets/js/lab-common.js" defer></script>
+</head>
+<body>
+    <a class="skip-link" href="#main-content">Skip to main content</a>
+
+    <header class="site-header" role="banner">
+        <div class="header-inner">
+            <a class="brand" href="../../index.html" aria-label="Programming Fundamentals — Home">
+                <img class="brand-mark" src="../../assets/images/logo-mark-64.png" alt="" width="36" height="36">
+                <span>Programming Fundamentals<span class="brand-course">The CE Lounge · Lab Materials</span></span>
+            </a>
+            <nav class="site-nav" aria-label="Course">
+                <ul>
+                    <li><a href="../../index.html">All labs</a></li>
+                </ul>
+            </nav>
+            <button type="button" class="theme-toggle" aria-pressed="false" aria-label="Switch to dark theme">🌙<span class="theme-label">Dark</span></button>
+        </div>
+    </header>
+
+    <div class="hero">
+        <p class="eyebrow">
+            <span aria-hidden="true">Lab 002 / 014</span>
+            <span class="sr-only">Lab 2 of 14</span>
+        </p>
+        <h1>Lab <span class="accent">Color Theory</span></h1>
+        <hr class="trace-rule" aria-hidden="true">
+        <p class="lede">Discover how RGB LEDs create millions of colors, learn Active-Low logic — a hardware "gotcha" that trips up beginners — and write functions to control LED brightness with PWM.</p>
+    </div>
+
+    <div class="page-grid">
+        <main id="main-content" class="content">
+
+            <section id="objectives" class="section" aria-labelledby="objectives-heading">
+                <h2 id="objectives-heading">Learning Objectives</h2>
+                <p>By the end of this lab, you will be able to:</p>
+                <ol>
+                    <li>Understand how <strong>RGB LEDs</strong> mix colors using red, green, and blue light.</li>
+                    <li>Write <strong>functions</strong> to create reusable color-control code.</li>
+                    <li>Grasp <strong>Active-Low logic</strong> — why <code>0</code> turns the LED ON on this board.</li>
+                    <li>Use <strong>PWM (Pulse Width Modulation)</strong> to control LED brightness.</li>
+                </ol>
+
+                <div class="example-card" role="note" aria-label="Lab information">
+                    <h3 id="lab-meta-heading">Lab Information</h3>
+                    <dl class="lab-meta-list">
+                        <dt>Hardware</dt>
+                        <dd>Onboard RGB LED (PWM-capable pins)</dd>
+                        <dt>Duration</dt>
+                        <dd>60–90 minutes</dd>
+                        <dt>Prerequisites</dt>
+                        <dd>Lab 1: Blink &amp; Loop</dd>
+                        <dt>Key Concept</dt>
+                        <dd>Active-Low logic, PWM, functions</dd>
+                    </dl>
+                </div>
+            </section>
+
+            <section id="active-low" class="section" aria-labelledby="active-low-heading">
+                <h2 id="active-low-heading">Part 1: Understanding Active-Low Logic</h2>
+                <p>On the Arduino NANO BLE Sense Rev 2, the onboard RGB LEDs use <strong>Active-Low logic</strong>. This means:</p>
+                <ul>
+                    <li><code>0</code> (LOW) turns the LED <strong>ON</strong></li>
+                    <li><code>1</code> (HIGH) turns the LED <strong>OFF</strong></li>
+                </ul>
+                <p>This is the opposite of what many beginners expect! It's a great "gotcha" moment to learn how hardware logic can differ from software logic.</p>
+
+                <!-- IMAGE PROVISION: replace src="" with the real file once photographed -->
+                <figure class="lab-figure" role="group" aria-labelledby="rgb-led-caption">
+                    <img src="" data-suggested-filename="assets/images/rgb-led-closeup.jpg"
+                         alt="Close-up photograph of the RGB LED on the Arduino NANO BLE Sense board showing the red, green, and blue LED elements."
+                         width="600" height="400"
+                         loading="lazy">
+                    <figcaption id="rgb-led-caption">Figure 1: The onboard RGB LED. Each color (red, green, blue) can be controlled independently.</figcaption>
+                </figure>
+
+                <div class="instructions" role="note" aria-label="Try it yourself">
+                    <strong>🔬 Try It:</strong> Write a quick test program to verify Active-Low behavior:
+                </div>
+
+                <div class="code-block">
+                    <span class="code-caption">Python — Active-Low Test</span>
+                    <pre><code>import machine
+import time
+
+# Define RGB LED pins (check your board's pinout)
+red = machine.PWM(machine.Pin(10))
+green = machine.PWM(machine.Pin(11))
+blue = machine.PWM(machine.Pin(12))
+
+print("Testing Active-Low logic...")
+
+# Active-Low: 0 = ON, 1 = OFF
+red.duty_u16(0)       # Red ON (0 duty = full brightness)
+time.sleep(1)
+red.duty_u16(65535)   # Red OFF (65535 duty = no brightness)
+time.sleep(1)
+
+print("Red LED should have blinked!")</code></pre>
+                </div>
+            </section>
+
+            <section id="pwm-brightness" class="section" aria-labelledby="pwm-heading">
+                <h2 id="pwm-heading">Part 2: PWM and Brightness Control</h2>
+                <p><strong>PWM (Pulse Width Modulation)</strong> lets us control LED brightness by rapidly turning the LED on and off. The <strong>duty cycle</strong> determines how much time the LED is ON versus OFF:</p>
+                <ul>
+                    <li><strong>0 duty</strong> = LED always ON (full brightness)</li>
+                    <li><strong>32767 duty</strong> = LED half ON, half OFF (50% brightness)</li>
+                    <li><strong>65535 duty</strong> = LED always OFF (off)</li>
+                </ul>
+
+                <!-- IMAGE PROVISION: replace src="" with the real file once created -->
+                <figure class="lab-figure" role="group" aria-labelledby="pwm-diagram-caption">
+                    <img src="" data-suggested-filename="assets/images/pwm-duty-cycle.png"
+                         alt="Diagram showing three PWM waveforms: 0% duty cycle (always low), 50% duty cycle (half on, half off), and 100% duty cycle (always high)."
+                         width="600" height="300"
+                         loading="lazy">
+                    <figcaption id="pwm-diagram-caption">Figure 2: PWM duty cycle visualization. Lower duty = brighter LED on Active-Low boards.</figcaption>
+                </figure>
+
+                <div class="code-block">
+                    <span class="code-caption">Python — PWM Brightness Test</span>
+                    <pre><code>import machine
+import time
+
+red = machine.PWM(machine.Pin(10))
+
+print("PWM brightness test...")
+
+# Fade from bright to dim (Active-Low: 0 = bright, 65535 = off)
+for duty in range(0, 65536, 5000):
+    red.duty_u16(duty)
+    print(f"Duty: {duty}")
+    time.sleep(0.3)
+
+print("Done!")</code></pre>
+                </div>
+            </section>
+
+            <section id="set-color-function" class="section" aria-labelledby="function-heading">
+                <h2 id="function-heading">Part 3: The <code>set_color()</code> Function</h2>
+                <p>Now let's combine everything into a reusable function that takes red, green, and blue values (0–100%) and handles Active-Low inversion automatically.</p>
+
+                <div class="code-block">
+                    <span class="code-caption">Python — set_color Function</span>
+                    <pre><code>import machine
+import time
+
+# Setup PWM pins
+red = machine.PWM(machine.Pin(10))
+green = machine.PWM(machine.Pin(11))
+blue = machine.PWM(machine.Pin(12))
+
+def set_color(r, g, b):
+    """Set RGB LED color. Values 0-100% (Active-Low inverted)."""
+    # Invert for Active-Low: 100% requested = 0 duty (full brightness)
+    red.duty_u16(int((100 - r) * 655.35))
+    green.duty_u16(int((100 - g) * 655.35))
+    blue.duty_u16(int((100 - b) * 655.35))
+
+# Test colors
+set_color(100, 0, 0)   # Pure Red
+time.sleep(1)
+set_color(0, 100, 0)   # Pure Green
+time.sleep(1)
+set_color(0, 0, 100)   # Pure Blue
+time.sleep(1)
+set_color(100, 100, 0) # Yellow (Red + Green)
+time.sleep(1)
+set_color(100, 100, 100) # White
+time.sleep(1)
+set_color(0, 0, 0)     # Off
+time.sleep(1)</code></pre>
+                </div>
+            </section>
+
+            <section id="appendix" class="section" aria-labelledby="appendix-heading">
+                <h2 id="appendix-heading">Appendix — Quick Reference</h2>
+
+                <h3 id="pwm-values">PWM Duty Cycle Values</h3>
+                <div class="table-responsive" role="region" aria-label="PWM values table">
+                    <table class="tt-table" summary="PWM duty cycle values and their brightness levels">
+                        <thead>
+                            <tr>
+                                <th scope="col">Duty Value</th>
+                                <th scope="col">Percentage</th>
+                                <th scope="col">Brightness (Active-Low)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>0</code></td>
+                                <td>0%</td>
+                                <td>Full brightness</td>
+                            </tr>
+                            <tr>
+                                <td><code>16384</code></td>
+                                <td>25%</td>
+                                <td>75% brightness</td>
+                            </tr>
+                            <tr>
+                                <td><code>32767</code></td>
+                                <td>50%</td>
+                                <td>50% brightness</td>
+                            </tr>
+                            <tr>
+                                <td><code>49151</code></td>
+                                <td>75%</td>
+                                <td>25% brightness</td>
+                            </tr>
+                            <tr>
+                                <td><code>65535</code></td>
+                                <td>100%</td>
+                                <td>Off</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h3 id="color-mixing">Color Mixing Reference</h3>
+                <div class="table-responsive" role="region" aria-label="Color mixing table">
+                    <table class="tt-table" summary="RGB color mixing reference">
+                        <thead>
+                            <tr>
+                                <th scope="col">Color</th>
+                                <th scope="col">Red</th>
+                                <th scope="col">Green</th>
+                                <th scope="col">Blue</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Red</td>
+                                <td>100</td>
+                                <td>0</td>
+                                <td>0</td>
+                            </tr>
+                            <tr>
+                                <td>Green</td>
+                                <td>0</td>
+                                <td>100</td>
+                                <td>0</td>
+                            </tr>
+                            <tr>
+                                <td>Blue</td>
+                                <td>0</td>
+                                <td>0</td>
+                                <td>100</td>
+                            </tr>
+                            <tr>
+                                <td>Yellow</td>
+                                <td>100</td>
+                                <td>100</td>
+                                <td>0</td>
+                            </tr>
+                            <tr>
+                                <td>Cyan</td>
+                                <td>0</td>
+                                <td>100</td>
+                                <td>100</td>
+                            </tr>
+                            <tr>
+                                <td>Magenta</td>
+                                <td>100</td>
+                                <td>0</td>
+                                <td>100</td>
+                            </tr>
+                            <tr>
+                                <td>White</td>
+                                <td>100</td>
+                                <td>100</td>
+                                <td>100</td>
+                            </tr>
+                            <tr>
+                                <td>Black (Off)</td>
+                                <td>0</td>
+                                <td>0</td>
+                                <td>0</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <nav class="pager" aria-label="Lab navigation">
+                <a class="pager-prev" href="../lab01-blink-loop/index.html">
+                    <span class="pager-label">Previous lab</span>
+                    <span class="pager-title">Lab 1: Blink &amp; Loop</span>
+                </a>
+                <a class="pager-next" href="../lab03-weather-reporter/index.html">
+                    <span class="pager-label">Next lab</span>
+                    <span class="pager-title">Lab 3: Weather Reporter →</span>
+                </a>
+            </nav>
+        </main>
+
+        <aside class="toc" data-toc aria-label="On this page">
+            <details open>
+                <summary>On this page</summary>
+                <nav aria-label="Table of contents">
+                    <ul>
+                        <li><a href="#objectives">Learning Objectives</a></li>
+                        <li><a href="#active-low">Active-Low Logic</a></li>
+                        <li><a href="#pwm-brightness">PWM Brightness</a></li>
+                        <li><a href="#set-color-function">set_color() Function</a></li>
+                        <li><a href="#appendix">Appendix</a></li>
+                    </ul>
+                </nav>
+            </details>
+        </aside>
+    </div>
+
+    <footer class="site-footer" role="contentinfo">
+        <div class="footer-inner">
+            <p>Programming Fundamentals · The CE Lounge · Spring 2026</p>
+            <p class="bits" aria-hidden="true">0 1 1 0 · 1 0 0 1</p>
+        </div>
+    </footer>
+</body>
+</html>

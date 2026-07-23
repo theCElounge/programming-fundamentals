@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Lab 3: Weather Reporter · Programming Fundamentals</title>
+    <meta name="description" content="Read live temperature and humidity from the HS3003 sensor and format the output using floats and f-strings.">
+
+    <link rel="icon" type="image/png" href="../../assets/images/favicon-32.png" sizes="32x32">
+    <link rel="icon" type="image/png" href="../../assets/images/favicon-16.png" sizes="16x16">
+    <link rel="apple-touch-icon" href="../../assets/images/apple-touch-icon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="../../assets/css/site.css">
+    <link rel="stylesheet" href="../../assets/css/lab-common.css">
+    <link rel="stylesheet" href="lab-styles.css">
+
+    <script src="../../assets/js/site.js" defer></script>
+    <script src="../../assets/js/lab-common.js" defer></script>
+</head>
+<body>
+    <a class="skip-link" href="#main-content">Skip to main content</a>
+
+    <header class="site-header" role="banner">
+        <div class="header-inner">
+            <a class="brand" href="../../index.html" aria-label="Programming Fundamentals — Home">
+                <img class="brand-mark" src="../../assets/images/logo-mark-64.png" alt="" width="36" height="36">
+                <span>Programming Fundamentals<span class="brand-course">The CE Lounge · Lab Materials</span></span>
+            </a>
+            <nav class="site-nav" aria-label="Course">
+                <ul>
+                    <li><a href="../../index.html">All labs</a></li>
+                </ul>
+            </nav>
+            <button type="button" class="theme-toggle" aria-pressed="false" aria-label="Switch to dark theme">🌙<span class="theme-label">Dark</span></button>
+        </div>
+    </header>
+
+    <div class="hero">
+        <p class="eyebrow">
+            <span aria-hidden="true">Lab 003 / 014</span>
+            <span class="sr-only">Lab 3 of 14</span>
+        </p>
+        <h1>Lab <span class="accent">Weather Reporter</span></h1>
+        <hr class="trace-rule" aria-hidden="true">
+        <p class="lede">Interface with the onboard HS3003 sensor, work with floats, and use f-strings to turn raw sensor numbers into a readable weather report.</p>
+    </div>
+
+    <div class="page-grid">
+        <main id="main-content" class="content">
+
+            <section id="objectives" class="section" aria-labelledby="objectives-heading">
+                <h2 id="objectives-heading">Learning Objectives</h2>
+                <p>By the end of this lab, you will be able to:</p>
+                <ol>
+                    <li>Read live temperature and humidity data from the onboard <strong>HS3003</strong> sensor.</li>
+                    <li>Work with <strong>floats</strong> — Python's data type for decimal numbers.</li>
+                    <li>Use <strong>f-strings</strong> to format sensor data into readable text.</li>
+                    <li>Convert between Celsius and Fahrenheit using a function.</li>
+                    <li>Round floating-point numbers for cleaner display.</li>
+                </ol>
+
+                <div class="example-card" role="note" aria-label="Lab information">
+                    <h3 id="lab-meta-heading">Lab Information</h3>
+                    <dl class="lab-meta-list">
+                        <dt>Hardware</dt>
+                        <dd>HS3003 Temperature/Humidity Sensor (onboard, I2C)</dd>
+                        <dt>Duration</dt>
+                        <dd>60–90 minutes</dd>
+                        <dt>Prerequisites</dt>
+                        <dd>Lab 2: Color Theory</dd>
+                        <dt>Key Concepts</dt>
+                        <dd>Floats, f-strings, data formatting</dd>
+                    </dl>
+                </div>
+            </section>
+
+            <section id="meet-hs3003" class="section" aria-labelledby="meet-hs3003-heading">
+                <h2 id="meet-hs3003-heading">Part 1: Meet the HS3003 Sensor</h2>
+                <p>The Arduino NANO BLE Sense Rev2 has an onboard <strong>HS3003</strong> sensor that measures both <strong>temperature</strong> and <strong>relative humidity</strong> at the same time. Unlike the LED you controlled in Labs 1 and 2, the HS3003 talks to the board over a protocol called <strong>I2C</strong> — a two-wire communication bus that lets many sensors share the same two pins.</p>
+                <p>You don't need to wire anything for this lab: the HS3003 is built into the board and connected to its internal I2C bus.</p>
+
+                <figure class="lab-figure" role="group" aria-labelledby="hs3003-sensor-location-jpg-caption">
+                    <img src="" data-suggested-filename="assets/images/hs3003-sensor-location.jpg"
+                         alt="Top-down photograph of the Arduino NANO BLE Sense Rev2 with an arrow pointing to the small HS3003 sensor package near the center of the board."
+                         width="700" height="420"
+                         loading="lazy">
+                    <figcaption id="hs3003-sensor-location-jpg-caption">Figure 1: The onboard HS3003 temperature/humidity sensor.</figcaption>
+                </figure>
+
+                <div class="instructions" role="note" aria-label="Driver file reminder">
+                    <strong>💡 Sensor driver:</strong> This lab uses a small driver module, <code>hs3003.py</code>, provided by your instructor. Before starting, open it in Thonny and use <span class="ui-path">File &gt; Save As &gt; MicroPython device</span> to copy it onto your board (it only needs to be copied once). If you're unsure whether it's already on your board, open <span class="ui-path">View &gt; Files</span> in Thonny and look for <code>hs3003.py</code> in the device file list.
+                </div>
+            </section>
+
+            <section id="first-reading" class="section" aria-labelledby="first-reading-heading">
+                <h2 id="first-reading-heading">Part 2: Your First Sensor Reading</h2>
+                <p>Let's take a single reading and print it to the shell.</p>
+
+                <div class="code-block">
+                    <span class="code-caption">Python — weather_test.py</span>
+                    <pre><code>import machine
+from hs3003 import HS3003
+
+# The onboard sensors share the internal I2C bus
+i2c = machine.I2C(1)
+sensor = HS3003(i2c)
+
+# .read() returns a tuple: (temperature_c, humidity_percent)
+temperature_c, humidity_percent = sensor.read()
+
+print("Temperature (C):", temperature_c)
+print("Humidity (%):", humidity_percent)</code></pre>
+                </div>
+
+                <p>Run the program. You should see two numbers printed — both <strong>floats</strong> (numbers with a decimal point), like <code>22.4</code> and <code>41.8</code>.</p>
+
+                <div class="callout-warning" role="alert" aria-label="Troubleshooting">
+                    <strong>🔧 Troubleshooting:</strong>
+                    <ul style="margin-top: 0.5rem; margin-bottom: 0;">
+                        <li><strong><code>ImportError: no module named 'hs3003'</code></strong> — the driver file hasn't been copied to the board yet. See the note above.</li>
+                        <li><strong>Readings look frozen or identical every time?</strong> Give the sensor a second to settle after power-up before reading it.</li>
+                    </ul>
+                </div>
+            </section>
+
+            <section id="floats" class="section" aria-labelledby="floats-heading">
+                <h2 id="floats-heading">Part 3: Working with Floats</h2>
+                <p>So far, every number you've used has probably been an <strong>integer</strong> (a whole number like <code>13</code> or <code>0</code>). Temperature and humidity aren't whole numbers — they need <strong>floats</strong> to represent fractional values like <code>22.4</code>.</p>
+
+                <div class="table-responsive" role="region" aria-label="Integers versus floats">
+                    <table class="tt-table" summary="Comparison of integer and float data types">
+                        <thead>
+                            <tr><th scope="col">Type</th><th scope="col">Example</th><th scope="col">Used for</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td><code>int</code></td><td><code>13</code></td><td>Pin numbers, counts, whole quantities</td></tr>
+                            <tr><td><code>float</code></td><td><code>22.4</code></td><td>Sensor readings, measurements, anything with fractions</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <p>Python automatically converts between the two in most math (this is called <strong>type coercion</strong>), but you can also convert explicitly with <code>float()</code> and <code>int()</code>:</p>
+
+                <div class="code-block">
+                    <span class="code-caption">Python — Shell</span>
+                    <pre><code>>>> float(22)
+22.0
+>>> int(22.9)
+22
+>>> round(22.4123, 1)
+22.4</code></pre>
+                </div>
+
+                <div class="instructions" role="note" aria-label="Watch out">
+                    <strong>⚠️ Watch out:</strong> <code>int()</code> doesn't round — it <em>truncates</em> (chops off the decimal). Use <code>round()</code> when you want proper rounding.
+                </div>
+
+                <h3 id="c-to-f">Celsius to Fahrenheit</h3>
+                <p>Let's write a function that converts our HS3003 reading to Fahrenheit:</p>
+
+                <div class="code-block">
+                    <span class="code-caption">Python — convert.py</span>
+                    <pre><code>def celsius_to_fahrenheit(celsius):
+    return celsius * 9 / 5 + 32
+
+temperature_c, humidity_percent = sensor.read()
+temperature_f = celsius_to_fahrenheit(temperature_c)
+
+print(round(temperature_f, 1))</code></pre>
+                </div>
+            </section>
+
+            <section id="fstrings" class="section" aria-labelledby="fstrings-heading">
+                <h2 id="fstrings-heading">Part 4: Formatting Output with F-Strings</h2>
+                <p>Printing raw numbers is fine for testing, but a real weather report should read like a sentence. Python's <strong>f-strings</strong> let you embed variables directly inside text by prefixing a string with <code>f</code> and wrapping variables in curly braces <code>{ }</code>.</p>
+
+                <div class="code-block">
+                    <span class="code-caption">Python — weather_report.py</span>
+                    <pre><code>import machine
+import time
+from hs3003 import HS3003
+
+i2c = machine.I2C(1)
+sensor = HS3003(i2c)
+
+def celsius_to_fahrenheit(celsius):
+    return celsius * 9 / 5 + 32
+
+while True:
+    temperature_c, humidity_percent = sensor.read()
+    temperature_f = celsius_to_fahrenheit(temperature_c)
+
+    report = f"Temp: {temperature_c:.1f} C ({temperature_f:.1f} F) | Humidity: {humidity_percent:.1f}%"
+    print(report)
+
+    time.sleep(2)</code></pre>
+                </div>
+
+                <p>The <code>:.1f</code> inside the braces is a <strong>format spec</strong> — it means "show this float with exactly 1 digit after the decimal point." This is much more reliable than <code>round()</code> for display purposes, because it always shows the same number of digits.</p>
+
+                <div class="table-responsive" role="region" aria-label="Common f-string format specs">
+                    <table class="tt-table" summary="Common format specifiers used inside f-strings">
+                        <thead>
+                            <tr><th scope="col">Format spec</th><th scope="col">Meaning</th><th scope="col">Example</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td><code>{value:.1f}</code></td><td>1 digit after the decimal</td><td><code>22.4</code></td></tr>
+                            <tr><td><code>{value:.2f}</code></td><td>2 digits after the decimal</td><td><code>22.43</code></td></tr>
+                            <tr><td><code>{value:5.1f}</code></td><td>Pad to 5 characters wide</td><td><code>&nbsp;22.4</code></td></tr>
+                            <tr><td><code>{value:+.1f}</code></td><td>Always show a sign</td><td><code>+22.4</code></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <figure class="lab-figure" role="group" aria-labelledby="weather-report-shell-output-png-caption">
+                    <img src="" data-suggested-filename="assets/images/weather-report-shell-output.png"
+                         alt="Screenshot of the Thonny shell showing repeated lines of formatted weather report output such as 'Temp: 22.4 C (72.3 F) | Humidity: 41.8 percent'."
+                         width="700" height="420"
+                         loading="lazy">
+                    <figcaption id="weather-report-shell-output-png-caption">Figure 2: Expected shell output — a new formatted line every 2 seconds.</figcaption>
+                </figure>
+            </section>
+
+            <section id="appendix" class="section" aria-labelledby="appendix-heading">
+                <h2 id="appendix-heading">Appendix — Quick Reference</h2>
+                <h3 id="hs3003-api">HS3003 Driver Reference</h3>
+                <div class="table-responsive" role="region" aria-label="HS3003 driver methods">
+                    <table class="tt-table" summary="Methods available on the HS3003 driver object">
+                        <thead><tr><th scope="col">Method</th><th scope="col">Returns</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>HS3003(i2c)</code></td><td>Creates a sensor object on the given I2C bus.</td></tr>
+                            <tr><td><code>sensor.read()</code></td><td>Tuple <code>(temperature_c, humidity_percent)</code>, both floats.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h3 id="fstring-cheatsheet">F-String Cheat Sheet</h3>
+                <div class="code-block">
+                    <span class="code-caption">Python — Reference</span>
+                    <pre><code>name = "Board"
+temp = 22.4123
+
+f"{name} reads {temp} C"        # "Board reads 22.4123 C"
+f"{name} reads {temp:.1f} C"    # "Board reads 22.4 C"
+f"{temp:.0f}"                    # "22" (rounded, no decimal)</code></pre>
+                </div>
+            </section>
+
+            <nav class="pager" aria-label="Lab navigation">
+                <a class="pager-prev" href="../lab02-color-theory/index.html">
+                    <span class="pager-label">Previous lab</span>
+                    <span class="pager-title">Lab 2: Color Theory</span>
+                </a>
+                <a class="pager-next" href="../lab04-data-logger/index.html">
+                    <span class="pager-label">Next lab</span>
+                    <span class="pager-title">Lab 4: Data Logger →</span>
+                </a>
+            </nav>
+        </main>
+
+        <aside class="toc" data-toc aria-label="On this page">
+            <details open>
+                <summary>On this page</summary>
+                <nav aria-label="Table of contents">
+                    <ul>
+                        <li><a href="#objectives">Learning Objectives</a></li>
+                        <li><a href="#meet-hs3003">Part 1: Meet the HS3003 Sensor</a></li>
+                        <li><a href="#first-reading">Part 2: Your First Sensor Reading</a></li>
+                        <li><a href="#floats">Part 3: Working with Floats</a></li>
+                        <li><a href="#fstrings">Part 4: Formatting Output with F-Strings</a></li>
+                        <li><a href="#appendix">Appendix — Quick Reference</a></li>
+                    </ul>
+                </nav>
+            </details>
+        </aside>
+    </div>
+
+    <footer class="site-footer" role="contentinfo">
+        <div class="footer-inner">
+            <p>Programming Fundamentals · The CE Lounge · Spring 2026</p>
+            <p class="bits" aria-hidden="true">0 1 1 0 · 1 0 0 1</p>
+        </div>
+    </footer>
+</body>
+</html>

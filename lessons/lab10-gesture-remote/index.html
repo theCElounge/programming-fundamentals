@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Lab 10: Gesture Remote · Programming Fundamentals</title>
+    <meta name="description" content="Detect hand gestures with the APDS9960 and build a gesture-controlled remote using if/elif/else and a state machine.">
+
+    <link rel="icon" type="image/png" href="../../assets/images/favicon-32.png" sizes="32x32">
+    <link rel="icon" type="image/png" href="../../assets/images/favicon-16.png" sizes="16x16">
+    <link rel="apple-touch-icon" href="../../assets/images/apple-touch-icon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="../../assets/css/site.css">
+    <link rel="stylesheet" href="../../assets/css/lab-common.css">
+    <link rel="stylesheet" href="lab-styles.css">
+
+    <script src="../../assets/js/site.js" defer></script>
+    <script src="../../assets/js/lab-common.js" defer></script>
+</head>
+<body>
+    <a class="skip-link" href="#main-content">Skip to main content</a>
+
+    <header class="site-header" role="banner">
+        <div class="header-inner">
+            <a class="brand" href="../../index.html" aria-label="Programming Fundamentals — Home">
+                <img class="brand-mark" src="../../assets/images/logo-mark-64.png" alt="" width="36" height="36">
+                <span>Programming Fundamentals<span class="brand-course">The CE Lounge · Lab Materials</span></span>
+            </a>
+            <nav class="site-nav" aria-label="Course">
+                <ul>
+                    <li><a href="../../index.html">All labs</a></li>
+                </ul>
+            </nav>
+            <button type="button" class="theme-toggle" aria-pressed="false" aria-label="Switch to dark theme">🌙<span class="theme-label">Dark</span></button>
+        </div>
+    </header>
+
+    <div class="hero">
+        <p class="eyebrow">
+            <span aria-hidden="true">Lab 010 / 014</span>
+            <span class="sr-only">Lab 10 of 14</span>
+        </p>
+        <h1>Lab <span class="accent">Gesture Remote</span></h1>
+        <hr class="trace-rule" aria-hidden="true">
+        <p class="lede">Detect hand gestures with the APDS9960, branch on them with if/elif/else, and build a state machine so the same gesture can mean different things in different modes.</p>
+    </div>
+
+    <div class="page-grid">
+        <main id="main-content" class="content">
+
+            <section id="objectives" class="section" aria-labelledby="objectives-heading">
+                <h2 id="objectives-heading">Learning Objectives</h2>
+                <p>By the end of this lab, you will be able to:</p>
+                <ol>
+                    <li>Read hand gestures from the onboard <strong>APDS9960</strong> sensor.</li>
+                    <li>Use <strong>if/elif/else</strong> chains to branch on gesture type.</li>
+                    <li>Understand and implement a <strong>state machine</strong> to track a "current mode."</li>
+                    <li>Map gestures to different actions depending on the current state.</li>
+                    <li>Build a simple gesture-controlled menu remote.</li>
+                </ol>
+
+                <div class="example-card" role="note" aria-label="Lab information">
+                    <h3 id="lab-meta-heading">Lab Information</h3>
+                    <dl class="lab-meta-list">
+                        <dt>Hardware</dt>
+                        <dd>APDS9960 Gesture/Proximity/Light/Color Sensor (onboard, I2C)</dd>
+                        <dt>Duration</dt>
+                        <dd>75–100 minutes</dd>
+                        <dt>Prerequisites</dt>
+                        <dd>Lab 9: Digital Spirit Level</dd>
+                        <dt>Key Concepts</dt>
+                        <dd>If/elif/else, state machines</dd>
+                    </dl>
+                </div>
+            </section>
+
+            <section id="meet-apds9960" class="section" aria-labelledby="meet-apds9960-heading">
+                <h2 id="meet-apds9960-heading">Part 1: Meet the APDS9960</h2>
+                <p>The <strong>APDS9960</strong> is the most versatile onboard sensor you'll use — it can sense <strong>gestures</strong> (a hand swiping up, down, left, or right above it), <strong>proximity</strong> (how close an object is), <strong>ambient light</strong>, and even <strong>color</strong>. This lab focuses on gesture detection; you'll return to its other modes in Labs 11–13.</p>
+
+                <figure class="lab-figure" role="group" aria-labelledby="apds9960-sensor-location-jpg-caption">
+                    <img src="" data-suggested-filename="assets/images/apds9960-sensor-location.jpg"
+                         alt="Top-down photograph of the Arduino NANO BLE Sense Rev2 with an arrow pointing to the small APDS9960 sensor window near the edge of the board."
+                         width="700" height="420"
+                         loading="lazy">
+                    <figcaption id="apds9960-sensor-location-jpg-caption">Figure 1: The onboard APDS9960 gesture/proximity/light/color sensor.</figcaption>
+                </figure>
+
+                <div class="instructions" role="note" aria-label="Driver reminder">
+                    <strong>💡 Sensor driver:</strong> Copy the course-provided <code>apds9960.py</code> driver onto your board with Thonny, the same way you did for the earlier sensors. You'll reuse this driver through Lab 13.
+                </div>
+
+                <div class="code-block">
+                    <span class="code-caption">Python — gesture_test.py</span>
+                    <pre><code>import machine
+import time
+from apds9960 import APDS9960
+
+i2c = machine.I2C(1)
+sensor = APDS9960(i2c)
+
+print("Wave your hand above the sensor (up/down/left/right)...")
+
+while True:
+    gesture = sensor.gesture()
+    if gesture is not None:
+        print("Detected:", gesture)
+    time.sleep(0.05)</code></pre>
+                </div>
+
+                <p>Swipe your hand a few inches above the sensor in each direction. The <code>.gesture()</code> method returns one of <code>"up"</code>, <code>"down"</code>, <code>"left"</code>, <code>"right"</code>, or <code>None</code> if nothing was detected on that check.</p>
+            </section>
+
+            <section id="if-elif-else" class="section" aria-labelledby="if-elif-else-heading">
+                <h2 id="if-elif-else-heading">Part 2: Branching with if/elif/else</h2>
+                <p>So far you've used single <code>if</code> statements and <code>and</code>/<code>or</code> to combine conditions. When you need to pick <strong>one</strong> action out of several mutually exclusive options, Python's <code>if</code>/<code>elif</code>/<code>else</code> chain is the right tool — it checks each condition in order and runs only the <strong>first</strong> one that matches.</p>
+
+                <div class="code-block">
+                    <span class="code-caption">Python — gesture_actions.py</span>
+                    <pre><code>import machine
+import time
+from apds9960 import APDS9960
+
+i2c = machine.I2C(1)
+sensor = APDS9960(i2c)
+
+while True:
+    gesture = sensor.gesture()
+
+    if gesture == "up":
+        print("Volume up")
+    elif gesture == "down":
+        print("Volume down")
+    elif gesture == "left":
+        print("Previous track")
+    elif gesture == "right":
+        print("Next track")
+    elif gesture is not None:
+        print("Unrecognized gesture:", gesture)
+
+    time.sleep(0.05)</code></pre>
+                </div>
+
+                <div class="instructions" role="note" aria-label="if vs elif">
+                    <strong>💡 <code>if</code> vs. <code>elif</code>:</strong> If you used separate <code>if</code> statements instead of <code>elif</code>, Python would check <em>every</em> condition every time, even after a match. <code>elif</code> stops checking as soon as one branch matches — both clearer and more efficient here, since a gesture can only be one thing at a time.
+                </div>
+            </section>
+
+            <section id="state-machines" class="section" aria-labelledby="state-machines-heading">
+                <h2 id="state-machines-heading">Part 3: State Machines — Giving Gestures Context</h2>
+                <p>A real remote doesn't treat every gesture the same way all the time — a "right" swipe might mean "next song" while browsing music, but "next photo" while browsing pictures. This requires the program to remember <strong>what mode it's currently in</strong>. That's the core idea of a <strong>state machine</strong>: a program that tracks a "current state" in a variable, and lets that state change how it responds to input.</p>
+
+                <figure class="lab-figure" role="group" aria-labelledby="state-machine-diagram-png-caption">
+                    <img src="" data-suggested-filename="assets/images/state-machine-diagram.png"
+                         alt="State diagram with three circular nodes labeled Menu, Music, and Photos, connected by labeled arrows showing gesture transitions between modes, such as an up arrow from Menu to Music."
+                         width="700" height="420"
+                         loading="lazy">
+                    <figcaption id="state-machine-diagram-png-caption">Figure 2: A simple state diagram — each swipe either performs an action or transitions to a new mode.</figcaption>
+                </figure>
+
+                <p>The pattern in code: one variable holds the current state, and the <code>if</code>/<code>elif</code> chain is nested one level deeper — first check the state, then check the gesture.</p>
+
+                <div class="code-block">
+                    <span class="code-caption">Python — gesture_state_machine.py</span>
+                    <pre><code>import machine
+import time
+from apds9960 import APDS9960
+
+i2c = machine.I2C(1)
+sensor = APDS9960(i2c)
+
+state = "menu"   # possible states: "menu", "music", "photos"
+
+print("State machine remote started. Current state:", state)
+
+while True:
+    gesture = sensor.gesture()
+
+    if gesture is not None:
+
+        if state == "menu":
+            if gesture == "up":
+                state = "music"
+                print("Entered Music mode")
+            elif gesture == "down":
+                state = "photos"
+                print("Entered Photos mode")
+
+        elif state == "music":
+            if gesture == "left":
+                print("Previous track")
+            elif gesture == "right":
+                print("Next track")
+            elif gesture == "down":
+                state = "menu"
+                print("Back to Menu")
+
+        elif state == "photos":
+            if gesture == "left":
+                print("Previous photo")
+            elif gesture == "right":
+                print("Next photo")
+            elif gesture == "up":
+                state = "menu"
+                print("Back to Menu")
+
+    time.sleep(0.05)</code></pre>
+                </div>
+
+                <div class="table-responsive" role="region" aria-label="State transition table">
+                    <table class="tt-table" summary="State transition table for the gesture remote">
+                        <thead><tr><th scope="col">Current state</th><th scope="col">Gesture</th><th scope="col">Result</th></tr></thead>
+                        <tbody>
+                            <tr><td>menu</td><td>up</td><td>→ music state</td></tr>
+                            <tr><td>menu</td><td>down</td><td>→ photos state</td></tr>
+                            <tr><td>music</td><td>left / right</td><td>Previous / next track (stays in music)</td></tr>
+                            <tr><td>music</td><td>down</td><td>→ menu state</td></tr>
+                            <tr><td>photos</td><td>left / right</td><td>Previous / next photo (stays in photos)</td></tr>
+                            <tr><td>photos</td><td>up</td><td>→ menu state</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="appendix" class="section" aria-labelledby="appendix-heading">
+                <h2 id="appendix-heading">Appendix — Quick Reference</h2>
+                <h3 id="apds9960-gesture-api">APDS9960 Driver Reference (Gesture)</h3>
+                <div class="table-responsive" role="region" aria-label="APDS9960 gesture methods">
+                    <table class="tt-table" summary="Gesture-related methods on the APDS9960 driver object">
+                        <thead><tr><th scope="col">Method</th><th scope="col">Returns</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>APDS9960(i2c)</code></td><td>Creates a sensor object on the given I2C bus.</td></tr>
+                            <tr><td><code>sensor.gesture()</code></td><td><code>"up"</code>, <code>"down"</code>, <code>"left"</code>, <code>"right"</code>, or <code>None</code>.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <nav class="pager" aria-label="Lab navigation">
+                <a class="pager-prev" href="../lab09-spirit-level/index.html">
+                    <span class="pager-label">Previous lab</span>
+                    <span class="pager-title">Lab 9: Digital Spirit Level</span>
+                </a>
+                <a class="pager-next" href="../lab11-night-light/index.html">
+                    <span class="pager-label">Next lab</span>
+                    <span class="pager-title">Lab 11: Night-Light →</span>
+                </a>
+            </nav>
+        </main>
+
+        <aside class="toc" data-toc aria-label="On this page">
+            <details open>
+                <summary>On this page</summary>
+                <nav aria-label="Table of contents">
+                    <ul>
+                        <li><a href="#objectives">Learning Objectives</a></li>
+                        <li><a href="#meet-apds9960">Part 1: Meet the APDS9960</a></li>
+                        <li><a href="#if-elif-else">Part 2: Branching with if/elif/else</a></li>
+                        <li><a href="#state-machines">Part 3: State Machines — Giving Gestures Context</a></li>
+                        <li><a href="#appendix">Appendix — Quick Reference</a></li>
+                    </ul>
+                </nav>
+            </details>
+        </aside>
+    </div>
+
+    <footer class="site-footer" role="contentinfo">
+        <div class="footer-inner">
+            <p>Programming Fundamentals · The CE Lounge · Spring 2026</p>
+            <p class="bits" aria-hidden="true">0 1 1 0 · 1 0 0 1</p>
+        </div>
+    </footer>
+</body>
+</html>
