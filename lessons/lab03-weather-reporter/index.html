@@ -80,12 +80,12 @@
 
             <section id="meet-hs3003" class="section" aria-labelledby="meet-hs3003-heading">
                 <h2 id="meet-hs3003-heading">Part 1: Meet the HS3003 Sensor</h2>
-                <p>The Arduino NANO BLE Sense Rev2 has an onboard <strong>HS3003</strong> sensor that measures both <strong>temperature</strong> and <strong>relative humidity</strong> at the same time. Unlike the LED you controlled in Labs 1 and 2, the HS3003 talks to the board over a protocol called <strong>I2C</strong> — a two-wire communication bus that lets many sensors share the same two pins.</p>
+                <p>The Arduino Nano 33 BLE Sense Rev2 has an onboard <strong>HS3003</strong> sensor that measures both <strong>temperature</strong> and <strong>relative humidity</strong> at the same time. Unlike the LED you controlled in Labs 1 and 2, the HS3003 talks to the board over a protocol called <strong>I2C</strong> — a two-wire communication bus that lets many sensors share the same two pins.</p>
                 <p>You don't need to wire anything for this lab: the HS3003 is built into the board and connected to its internal I2C bus.</p>
 
                 <figure class="lab-figure" role="group" aria-labelledby="hs3003-sensor-location-jpg-caption">
                     <img src="" data-suggested-filename="assets/images/hs3003-sensor-location.jpg"
-                         alt="Top-down photograph of the Arduino NANO BLE Sense Rev2 with an arrow pointing to the small HS3003 sensor package near the center of the board."
+                         alt="Top-down photograph of the Arduino Nano 33 BLE Sense Rev2 with an arrow pointing to the small HS3003 sensor package near the center of the board."
                          width="700" height="420"
                          loading="lazy">
                     <figcaption id="hs3003-sensor-location-jpg-caption">Figure 1: The onboard HS3003 temperature/humidity sensor.</figcaption>
@@ -106,7 +106,8 @@
 from hs3003 import HS3003
 
 # The onboard sensors share the internal I2C bus
-i2c = machine.I2C(1)
+# (SDA = P0.14, SCL = P0.15 on the Nano 33 BLE Sense)
+i2c = machine.I2C(1, scl=machine.Pin(15), sda=machine.Pin(14))
 sensor = HS3003(i2c)
 
 # .read() returns a tuple: (temperature_c, humidity_percent)
@@ -164,7 +165,13 @@ print("Humidity (%):", humidity_percent)</code></pre>
 
                 <div class="code-block">
                     <span class="code-caption">Python — convert.py</span>
-                    <pre><code>def celsius_to_fahrenheit(celsius):
+                    <pre><code>import machine
+from hs3003 import HS3003
+
+i2c = machine.I2C(1, scl=machine.Pin(15), sda=machine.Pin(14))
+sensor = HS3003(i2c)
+
+def celsius_to_fahrenheit(celsius):
     return celsius * 9 / 5 + 32
 
 temperature_c, humidity_percent = sensor.read()
@@ -184,7 +191,7 @@ print(round(temperature_f, 1))</code></pre>
 import time
 from hs3003 import HS3003
 
-i2c = machine.I2C(1)
+i2c = machine.I2C(1, scl=machine.Pin(15), sda=machine.Pin(14))
 sensor = HS3003(i2c)
 
 def celsius_to_fahrenheit(celsius):
@@ -232,7 +239,7 @@ while True:
                     <table class="tt-table" summary="Methods available on the HS3003 driver object">
                         <thead><tr><th scope="col">Method</th><th scope="col">Returns</th></tr></thead>
                         <tbody>
-                            <tr><td><code>HS3003(i2c)</code></td><td>Creates a sensor object on the given I2C bus.</td></tr>
+                            <tr><td><code>HS3003(i2c)</code></td><td>Creates a sensor object on the given I2C bus. Use <code>machine.I2C(1, scl=machine.Pin(15), sda=machine.Pin(14))</code> for the internal bus.</td></tr>
                             <tr><td><code>sensor.read()</code></td><td>Tuple <code>(temperature_c, humidity_percent)</code>, both floats.</td></tr>
                         </tbody>
                     </table>
