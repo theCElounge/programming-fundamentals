@@ -84,7 +84,7 @@
 
                 <figure class="lab-figure" role="group" aria-labelledby="bmi270-sensor-location-jpg-caption">
                     <img src="" data-suggested-filename="assets/images/bmi270-sensor-location.jpg"
-                         alt="Top-down photograph of the Arduino NANO BLE Sense Rev2 with an arrow pointing to the BMI270 IMU package near the center of the board."
+                         alt="Top-down photograph of the Arduino Nano 33 BLE Sense Rev2 with an arrow pointing to the BMI270 IMU package near the center of the board."
                          width="700" height="420"
                          loading="lazy">
                     <figcaption id="bmi270-sensor-location-jpg-caption">Figure 1: The onboard BMI270 6-axis IMU.</figcaption>
@@ -99,7 +99,7 @@
                     <pre><code>import machine
 from bmi270 import BMI270
 
-i2c = machine.I2C(1)
+i2c = machine.I2C(1, scl=machine.Pin(15), sda=machine.Pin(14))
 imu = BMI270(i2c)
 
 # .read_accel() returns a tuple of 3 floats, in units of g (9.8 m/s^2)
@@ -116,7 +116,7 @@ print(f"x={x:.2f} g   y={y:.2f} g   z={z:.2f} g")</code></pre>
 
                 <figure class="lab-figure" role="group" aria-labelledby="accelerometer-axes-diagram-png-caption">
                     <img src="" data-suggested-filename="assets/images/accelerometer-axes-diagram.png"
-                         alt="3D diagram of the Arduino NANO BLE Sense board with X, Y, and Z axis arrows labeled, and a downward-pointing gravity vector shown splitting into components along each axis when the board is tilted."
+                         alt="3D diagram of the Arduino Nano 33 BLE Sense board with X, Y, and Z axis arrows labeled, and a downward-pointing gravity vector shown splitting into components along each axis when the board is tilted."
                          width="700" height="420"
                          loading="lazy">
                     <figcaption id="accelerometer-axes-diagram-png-caption">Figure 2: When the board tilts, gravity's pull splits across the X, Y, and Z axes.</figcaption>
@@ -130,7 +130,7 @@ print(f"x={x:.2f} g   y={y:.2f} g   z={z:.2f} g")</code></pre>
 import time
 from bmi270 import BMI270
 
-i2c = machine.I2C(1)
+i2c = machine.I2C(1, scl=machine.Pin(15), sda=machine.Pin(14))
 imu = BMI270(i2c)
 
 while True:
@@ -159,6 +159,10 @@ while True:
 45.0</code></pre>
                 </div>
 
+                <div class="instructions" role="note" aria-label="Float precision note">
+                    <strong>💡 Note:</strong> On the board you may see fewer decimal places than shown here (e.g. <code>3.141593</code> instead of <code>3.141592653589793</code>). MicroPython on this board uses single-precision floats, while desktop Python uses double precision. The math still works the same — the numbers are just stored with less precision.
+                </div>
+
                 <div class="instructions" role="note" aria-label="Radians vs degrees">
                     <strong>💡 Radians vs. degrees:</strong> Python's trig functions work in <strong>radians</strong>, not degrees. Always wrap the result in <code>math.degrees()</code> to get a number you can read naturally.
                 </div>
@@ -172,7 +176,7 @@ import math
 import time
 from bmi270 import BMI270
 
-i2c = machine.I2C(1)
+i2c = machine.I2C(1, scl=machine.Pin(15), sda=machine.Pin(14))
 imu = BMI270(i2c)
 
 while True:
@@ -199,7 +203,7 @@ import math
 import time
 from bmi270 import BMI270
 
-i2c = machine.I2C(1)
+i2c = machine.I2C(1, scl=machine.Pin(15), sda=machine.Pin(14))
 imu = BMI270(i2c)
 
 WIDTH = 21  # characters wide, must be odd so there's a true center
@@ -236,7 +240,7 @@ while True:
                     <table class="tt-table" summary="Accelerometer methods on the BMI270 driver object">
                         <thead><tr><th scope="col">Method</th><th scope="col">Returns</th></tr></thead>
                         <tbody>
-                            <tr><td><code>BMI270(i2c)</code></td><td>Creates an IMU object on the given I2C bus.</td></tr>
+                            <tr><td><code>BMI270(i2c)</code></td><td>Creates an IMU object on the given I2C bus. Use <code>machine.I2C(1, scl=machine.Pin(15), sda=machine.Pin(14))</code> for the internal bus.</td></tr>
                             <tr><td><code>imu.read_accel()</code></td><td>Tuple <code>(x, y, z)</code> in units of g.</td></tr>
                         </tbody>
                     </table>
